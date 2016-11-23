@@ -52,14 +52,19 @@ C<Net::Netmask> objects are created with an IP address and mask.
 
 Currently, the following forms are recognized
 
-    # CIDR notation
+    # CIDR notation (1 positional arg)
     Net::Netmask.new('192.168.75.8/29');
 
-    # Positional address and netmask
+    # Address and netmask (1 positional arg)
+    Net::Netmask.new('192.168.75.8 255.255.255.248')
+
+    # Address and netmask (2 positional args)
     Net::Netmask.new('192.168.75.8', '255.255.255.248')
 
     # Named arguments
     Net::Netmask.new( :address('192.168.75.8') :netmask('255.255.255.248') );
+
+Using a 'hostmask' (aka, 'wildcard mask') in place of the netmask will also work.
 
 If you create a C<Net::Netmask> object from one of the host addresses in the subnet, it will still work
 
@@ -256,14 +261,25 @@ class Net::Netmask {
     multi method new(CIDR $cidr) {
         my ($address, $bits) = $cidr.split('/');
         my $netmask = ((2 ** $bits - 1) +< (32 - $bits)).&dec2ip;
-        self.new(:$address :$netmask);
+        self.bless(:$address :$netmask);
+    }
+
+    multi method new($network where *.words == 2) {
+        self.new(|$network.words)
+    }
+
+    multi method new(*@args) {
+        #my ($addr, $mask) = @args.flatmap( *.split(/ \s+ | '/' /) );
+        fail("Unable to parse network '{ @args }'")
     }
 
     submethod BUILD(IPv4 :$address, IPv4 :$netmask) {
-        $!netmask = $netmask;
+
+        $!netmask = $netmask.split('.')[0] < 128
+          ?? $netmask.&bitflip !! $netmask;
 
         $!start = (
-            [Z+&] ($address, $netmask).map(*.split('.'))
+            [Z+&] ($address, $!netmask).map(*.split('.'))
         ).join('.').&ip2dec;
 
         $!address = $!start.&dec2ip;

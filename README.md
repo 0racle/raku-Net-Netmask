@@ -51,15 +51,20 @@ CONSTRUCTION
 Currently, the following forms are recognized
 
 ```perl6
-# CIDR notation
+# CIDR notation (1 positional arg)
 Net::Netmask.new('192.168.75.8/29');
 
-# Positional address and netmask
+# Address and netmask (1 positional arg)
+Net::Netmask.new('192.168.75.8 255.255.255.248')
+
+# Address and netmask (2 positional args)
 Net::Netmask.new('192.168.75.8', '255.255.255.248')
 
 # Named arguments
 Net::Netmask.new( :address('192.168.75.8') :netmask('255.255.255.248') );
 ```
+
+Using a 'hostmask' (aka, 'wildcard mask') in place of the netmask will also work.
 
 If you create a `Net::Netmask` object from one of the host addresses in the subnet, it will still work
 
