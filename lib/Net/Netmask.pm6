@@ -122,9 +122,9 @@ Given a valid IPv4 address, returns a true value if the address is contained wit
         say "IP is at index $pos.";
     }
 
-In the above example, C<match> returns C<0 but True>, so even if you are matching on the network address (at position 0) it still evaluates as True. If the address is not in the subnet, it will return C<False>.
+In the above example, C<match> returns C<0 but True>, so even if you are matching on the network address (at position C<0>) it still evaluates as C<True>. If the address is not in the subnet, it will return C<False>.
 
-You could also build an array of C<Net::Netmask> objects to use as a rudimentary blacklist (or whitelist) checker.
+You could also build a ridumentary blacklist (or whitelist) checker out of an array of C<Net::Netmask> objects.
 
     my @blacklist = map { Net::Netmask.new($_) },
       < 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 >;
@@ -163,10 +163,10 @@ This method works similarly to C<enumerate>, except it is optimised for subscrip
     my $net = Net::Netmask.new('10.0.0.0/8');
 
     # Instant result
-    say $net.nth(10000);
+    say "The 10000th address is " ~ $net.nth(10000);
 
     # Takes several seconds
-    say $net.enumerate[10000]; 
+    say "The 10000th address is " ~ $net.enumerate[10000];
 
 This method will also happily takes a C<Range> as it's argument, but if you want to get any trickier, you will need to provide a container to ensure it is passed as a single argument.
 
@@ -222,7 +222,7 @@ Alternatively, you can decrement your C<Net::Netmask> object to the previous blo
 
 =head1 BUGS, LIMITATIONS, and TODO
 
-As mentioned in the description, this module does not have method parity with the Perl 5 module of the same name. I didn't really look at how the other module is implemented, so there's a chance some of my methods might be horribly inefficient. Pull requests are welcome.
+As mentioned in the description, this module does not have method parity with the Perl 5 module of the same name. I didn't really look at how the other module is implemented, so there's a chance some of my methods might be horribly inefficient. Pull requests are welcome!
 
 As yet I have not written tests... For shame.
 

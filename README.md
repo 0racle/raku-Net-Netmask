@@ -84,14 +84,14 @@ address
 
 Returns the first address of the network block, aka the network address.
 
-Synonyms: base, first
+Synonyms: `base`, `first`
 
 netmask
 -------
 
 Returns the subnet mask in dotted-quad notation.
 
-Synonyms: mask
+Synonyms: `mask`
 
 hostmask
 --------
@@ -103,7 +103,7 @@ broadcast
 
 Returns the last address of the network block, aka the broadcast address.
 
-Synonyms: last
+Synonyms: `last`
 
 bits
 ----
@@ -141,9 +141,9 @@ if $net.match('192.168.0.0') -> $pos {
 }
 ```
 
-In the above example, `match` returns `0 but True`, so even if you are matching on the network address (at position 0) it still evaluates as True. If the address is not in the subnet, it will return `False`.
+In the above example, `match` returns `0 but True`, so even if you are matching on the network address (at position `0`) it still evaluates as `True`. If the address is not in the subnet, it will return `False`.
 
-You could also build an array of `Net::Netmask` objects to use as a rudimentary blacklist (or whitelist) checker.
+You could also build a ridumentary blacklist (or whitelist) checker out of an array of `Net::Netmask` objects.
 
 ```perl6
 my @blacklist = map { Net::Netmask.new($_) },
@@ -196,10 +196,10 @@ This method works similarly to `enumerate`, except it is optimised for subscript
 my $net = Net::Netmask.new('10.0.0.0/8');
 
 # Instant result
-say $net.nth(10000);
+say "The 10000th address is " ~ $net.nth(10000);
 
 # Takes several seconds
-say $net.enumerate[10000];
+say "The 10000th address is " ~ $net.enumerate[10000];
 ```
 
 This method will also happily takes a `Range` as it's argument, but if you want to get any trickier, you will need to provide a container to ensure it is passed as a single argument.
