@@ -32,8 +32,8 @@ for $net.enumerate -> $ip {
 }
 
 # Split subnet into smaller blocks
-for $net.enumerate(:30bit :nets) -> $ip {
-    say $ip;
+for $net.enumerate(:30bit :nets) -> $addr {
+    say $addr;
 }
 
 =end code
