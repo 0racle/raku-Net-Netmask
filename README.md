@@ -6,6 +6,7 @@ Net::Netmask - Parse, manipulate and lookup IP network blocks
 SYNOPSIS
 ========
 
+``perl6
     use Net::Netmask;
 
     my $net = Net::Netmask.new('192.168.75.8/29');
@@ -33,6 +34,7 @@ SYNOPSIS
     for $net.enumerate(:30bits) -> $ip {
         say $ip;
     }
+```
 
 DESCRIPTION
 ===========
