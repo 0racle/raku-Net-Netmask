@@ -352,8 +352,11 @@ class Net::Netmask {
         $bit > 32 and fail('Cannot split network into smaller than /32 blocks');
         my $inc = 2 ** ( 32 - $bit ) × 1;
         my @n = $n.flatmap(* × $inc);
-        if @n.first( * >= $.size ÷ $inc ) -> $i {
-            return fail("Index out of range. Is: $i, should be in 0..{ ($.size ÷ $inc) - 1 }");
+        if @n.first( * >= $.size ) -> $i {
+            return fail(
+                "Index out of range. Is: { $i ÷ $inc }, "
+              ~ "should be in 0..{ ($.size ÷ $inc) - 1 }"
+            );
         }
         ($!start .. $!end)[@n].map(&dec2ip).map(-> $ip {
             $nets ?? self.new( "$ip/$bit" ) !! $ip
