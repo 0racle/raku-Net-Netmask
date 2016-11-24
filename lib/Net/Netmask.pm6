@@ -304,7 +304,7 @@ class Net::Netmask {
     }
 
     method Str     { "$.base/$.bits";      }
-    method gist    { qq[Net.new("$.Str")]; }
+    method gist    { qq[Net::Netmask.new("$.Str")]; }
 
     method Numeric { $!start; }
     method Int     { $!start; }
