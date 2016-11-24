@@ -1,7 +1,7 @@
 NAME
 ====
 
-Net::Netmask - Parse, manipulate and lookup IP network blocks
+Net::Netmask - Parse, manipulate and lookup IPv4 network blocks
 
 SYNOPSIS
 ========

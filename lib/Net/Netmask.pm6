@@ -320,8 +320,16 @@ class Net::Netmask {
         $!end.&dec2ip;
     }
 
+    method last {
+        $.broadcast;
+    }
+
     method base {
         $!address;
+    }
+
+    method first {
+        $.base;
     }
 
     method bits {
