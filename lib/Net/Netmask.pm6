@@ -112,7 +112,7 @@ Returns the inverse of the netmask, aka wildcard mask.
 
 Returns the last address of the network block, aka the broadcast address.
 
-Synonyms: last
+Synonyms: C<last>
 
 =head2 bits
 

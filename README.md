@@ -108,7 +108,7 @@ broadcast
 
 Returns the last address of the network block, aka the broadcast address.
 
-Synonyms: last
+Synonyms: `last`
 
 bits
 ----
