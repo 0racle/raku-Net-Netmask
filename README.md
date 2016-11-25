@@ -1,7 +1,7 @@
 NAME
 ====
 
-Net::Netmask - Parse, manipulate and lookup IPv4 network blocks
+Net::Netmask - Parse, manipulate and lookup IP network blocks
 
 SYNOPSIS
 ========
@@ -108,7 +108,7 @@ broadcast
 
 Returns the last address of the network block, aka the broadcast address.
 
-Synonyms: `last`
+Synonyms: last
 
 bits
 ----
@@ -134,7 +134,7 @@ match
 -----
 
 ```perl6
-    method match(IPv4 $ip)
+method match(IPv4 $ip)
 ```
 
 Given a valid IPv4 address, returns a true value if the address is contained within the subnet. That is to say, it will return the addresses index in the subnet.
@@ -164,14 +164,13 @@ enumerate
 ---------
 
 ```perl6
-    method enumerate(Int :$bit = 32, Bool :$nets)
+method enumerate(Int :$bit = 32, Bool :$nets)
 ```
 
 Returns a lazy list of the IP addresses in that subnet. By default, it enumerates over all the 32-bit subnets (ie. single addresses) in the subnet, but by providing an optional named `Int` argument `:bit` , you can split the subnet into smaller blocks
 
 ```perl6
 # Split subnet into /30 blocks
-
 for $net.enumerate(:30bit) -> $ip {
     say $ip;
 }
@@ -192,7 +191,7 @@ nth
 ---
 
 ```perl6
-    method nth($n, Int :$bit = 32, Int :$nets)
+method nth($n, Int :$bit = 32, Int :$nets)
 ```
 
 This method works similarly to `enumerate`, except it is optimised for subscripting, which is most noticeable with large ranges
@@ -230,7 +229,7 @@ next
 ----
 
 ```perl6
-    method next()
+method next()
 ```
 
 Returns a `Net::Netmask` object of the next block with the same mask.
@@ -254,7 +253,7 @@ prev
 ----
 
 ```perl6
-    method prev()
+method prev()
 ```
 
 Just like `next` but in reverse. Returns a `Net::Netmask` object of the previous block with the same mask.
@@ -277,7 +276,7 @@ say "Next block is $net"; # Previous block is 192.168.0.0/24
 BUGS, LIMITATIONS, and TODO
 ===========================
 
-As mentioned in the description, this module does not have method parity with the Perl 5 module of the same name. I didn't really look at how the other module is implemented, so there's a chance some of my methods might be horribly inefficient. Pull requests are welcome.
+As mentioned in the description, this module does not have method parity with the Perl 5 module of the same name. I didn't really look at how the other module is implemented, so there's a chance some of my methods might be horribly inefficient. Pull requests are welcome!
 
 As yet I have not written tests... For shame.
 
@@ -287,4 +286,3 @@ LICENCE
     The Artistic License 2.0
 
 See LICENSE file in the repository for the full license text.
-

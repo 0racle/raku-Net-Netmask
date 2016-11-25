@@ -96,13 +96,13 @@ subset IPv4 of Str where /<address>/;
 
 Returns the first address of the network block, aka the network address.
 
-Synonyms: base, first
+Synonyms: C<base>, C<first>
 
 =head2 netmask
 
 Returns the subnet mask in dotted-quad notation.
 
-Synonyms: mask
+Synonyms: C<mask>
 
 =head2 hostmask
 
