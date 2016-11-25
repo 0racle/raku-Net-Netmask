@@ -6,7 +6,7 @@ Net::Netmask - Parse, manipulate and lookup IP network blocks
 
 =head1 SYNOPSIS
 
-=begin code
+=begin code :lang<perl6>
 
 use Net::Netmask;
 
@@ -52,30 +52,42 @@ C<Net::Netmask> objects are created with an IP address and mask.
 
 Currently, the following forms are recognized
 
-    # CIDR notation (1 positional arg)
-    Net::Netmask.new('192.168.75.8/29');
+=begin code :lang<perl6>
 
-    # Address and netmask (1 positional arg)
-    Net::Netmask.new('192.168.75.8 255.255.255.248')
+# CIDR notation (1 positional arg)
+Net::Netmask.new('192.168.75.8/29');
 
-    # Address and netmask (2 positional args)
-    Net::Netmask.new('192.168.75.8', '255.255.255.248')
+# Address and netmask (1 positional arg)
+Net::Netmask.new('192.168.75.8 255.255.255.248')
 
-    # Named arguments
-    Net::Netmask.new( :address('192.168.75.8') :netmask('255.255.255.248') );
+# Address and netmask (2 positional args)
+Net::Netmask.new('192.168.75.8', '255.255.255.248')
+
+# Named arguments
+Net::Netmask.new( :address('192.168.75.8') :netmask('255.255.255.248') );
+
+=end code
 
 Using a 'hostmask' (aka, 'wildcard mask') in place of the netmask will also work.
 
 If you create a C<Net::Netmask> object from one of the host addresses in the subnet, it will still work
 
-    my $net = Net::Netmask.new('192.168.75.10/29');
-    say ~$net;    # 192.168.75.8/29
+=begin code :lang<perl6>
+
+my $net = Net::Netmask.new('192.168.75.10/29');
+say ~$net;    # 192.168.75.8/29
+
+=end code
 
 IP Addresses are validated against the following subset
 
-    token octet   { (\d+) <?{ $0 <= 255 }>  }
-    regex address { <octet> ** 4 % '.'      }
-    subset IPv4 of Str where /<address>/;
+=begin code :lang<perl6>
+
+token octet   { (\d+) <?{ $0 <= 255 }>  }
+regex address { <octet> ** 4 % '.'      }
+subset IPv4 of Str where /<address>/;
+
+=end code
 
 
 =head1 METHODS
@@ -106,123 +118,187 @@ Synonyms: last
 
 Returns the number of bits in the network portion of the netmask, which is the same number that appears at the end of a network written in CIDR notation.
 
-    say Net::Netmask.new('192.168.0.0', '255.255.255.0').bits;   # 24
-    say Net::Netmask.new('192.168.0.0', '255.255.255.252').bits; # 30
+=begin code :lang<perl6>
+
+say Net::Netmask.new('192.168.0.0', '255.255.255.0').bits;   # 24
+say Net::Netmask.new('192.168.0.0', '255.255.255.252').bits; # 30
+
+=end code
 
 =head2 size
 
 Returns the number of IP address in the block
 
-    say Net::Netmask.new('192.168.0.0', '255.255.255.0').size;   # 256
-    say Net::Netmask.new('192.168.0.0', '255.255.255.252').size; # 4
+=begin code :lang<perl6>
+
+say Net::Netmask.new('192.168.0.0', '255.255.255.0').size;   # 256
+say Net::Netmask.new('192.168.0.0', '255.255.255.252').size; # 4
+
+=end code
 
 =head2 match
 
-    method match(IPv4 $ip)
+=begin code :lang<perl6>
+
+method match(IPv4 $ip)
+
+=end code
 
 Given a valid IPv4 address, returns a true value if the address is contained within the subnet. That is to say, it will return the addresses index in the subnet.
 
-    my $net = Net::Netmask.new('192.168.0.0/24');
-    if $net.match('192.168.0.0') -> $pos {
-        say "IP is at index $pos.";
-    }
+=begin code :lang<perl6>
+
+my $net = Net::Netmask.new('192.168.0.0/24');
+if $net.match('192.168.0.0') -> $pos {
+    say "IP is at index $pos.";
+}
+
+=end code
 
 In the above example, C<match> returns C<0 but True>, so even if you are matching on the network address (at position C<0>) it still evaluates as C<True>. If the address is not in the subnet, it will return C<False>.
 
 You could also build a ridumentary blacklist (or whitelist) checker out of an array of C<Net::Netmask> objects.
 
-    my @blacklist = map { Net::Netmask.new($_) },
-      < 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 >;
+=begin code :lang<perl6>
 
-    my $host = '192.168.0.15';
-    if ( any @blacklist».match($host) ) {
-        say "$host is blacklisted";
-    }
+my @blacklist = map { Net::Netmask.new($_) },
+  < 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 >;
+
+my $host = '192.168.0.15';
+if ( any @blacklist».match($host) ) {
+    say "$host is blacklisted";
+}
+
+=end code
 
 =head2 enumerate
 
-    method enumerate(Int :$bit = 32, Bool :$nets)
+=begin code :lang<perl6>
+
+method enumerate(Int :$bit = 32, Bool :$nets)
+
+=end code
 
 Returns a lazy list of the IP addresses in that subnet. By default, it enumerates over all the 32-bit subnets (ie. single addresses) in the subnet, but by providing an optional named C<Int> argument C<:bit> , you can split the subnet into smaller blocks
 
-        # Split subnet into /30 blocks
-    for $net.enumerate(:30bit) -> $ip {
-        say $ip;
-    }
+=begin code :lang<perl6>
+# Split subnet into /30 blocks
+for $net.enumerate(:30bit) -> $ip {
+    say $ip;
+}
+=end code
 
 Additionally, you can also pass an optional named C<Bool> argument C<:nets>, which will return C<Net::Netmask> objects instead of C<Str>s.
 
 While you can subscript into the list generated by enumerate, it is not recommended for large subnets, because while C<enumerate> produces a lazy list, it will still need to evaluate all previous entries before the subscripted one.
 
-    # Addresses 0..3 were still evaluated
-    say "The address at index 4 is $net.enumerate[4]"
+=begin code :lang<perl6>
+# Addresses 0..3 were still evaluated
+say "The address at index 4 is $net.enumerate[4]"
+=end code
 
 Instead you are recommended to use the C<nth> method.
 
 =head2 nth
 
-    method nth($n, Int :$bit = 32, Int :$nets)
+=begin code :lang<perl6>
+
+method nth($n, Int :$bit = 32, Int :$nets)
+
+=end code
 
 This method works similarly to C<enumerate>, except it is optimised for subscripting, which is most noticeable with large ranges
 
-    my $net = Net::Netmask.new('10.0.0.0/8');
+=begin code :lang<perl6>
 
-    # Instant result
-    say "The 10000th address is " ~ $net.nth(10000);
+my $net = Net::Netmask.new('10.0.0.0/8');
 
-    # Takes several seconds
-    say "The 10000th address is " ~ $net.enumerate[10000];
+# Instant result
+say "The 10000th address is " ~ $net.nth(10000);
+
+# Takes several seconds
+say "The 10000th address is " ~ $net.enumerate[10000];
+
+=end code
 
 This method will also happily takes a C<Range> as it's argument, but if you want to get any trickier, you will need to provide a container to ensure it is passed as a single argument.
 
-    # Works as expected
-    say $net.nth(10000..10010);
+=begin code :lang<perl6>
 
-    # Too many arguments
-    say $net.nth(10000..10010, 20000);
+# Works as expected
+say $net.nth(10000..10010);
 
-    # Works if in container
-    say $net.nth([10000..10010, 20000]);
+# Too many arguments
+say $net.nth(10000..10010, 20000);
 
-    # This also works
-    my @n = 10000..10010, 20000;
-    say $net.nth(@n);
+# Works if in container
+say $net.nth([10000..10010, 20000]);
+
+# This also works
+my @n = 10000..10010, 20000;
+say $net.nth(@n);
+
+=end code
 
 The named arguments C<:bit> and C<:nets> work identically to C<enumerate>
 
 =head2 next
 
-    method next()
+=begin code :lang<perl6>
+
+method next()
+
+=end code
 
 Returns a C<Net::Netmask> object of the next block with the same mask.
 
-    my $net = Net::Netmask.new('192.168.0.0/24');
-    my $next = $net.next;
+=begin code :lang<perl6>
 
-    say "$next comes after $net"; # 192.168.1.0/24 comes after 192.168.0.0/24
+my $net = Net::Netmask.new('192.168.0.0/24');
+my $next = $net.next;
+
+say "$next comes after $net"; # 192.168.1.0/24 comes after 192.168.0.0/24
+
+=end code
 
 Alternatively, you can increment your C<Net::Netmask> object to the next block by using the auto-increment operator
 
-    say "This block is $net"; # This block is 192.168.0.0/24
-    $net++;
-    say "Next block is $net"; # Next block is 192.168.1.0/24
+=begin code :lang<perl6>
+
+say "This block is $net"; # This block is 192.168.0.0/24
+$net++;
+say "Next block is $net"; # Next block is 192.168.1.0/24
+
+=end code
 
 =head2 prev
 
-    method prev()
+=begin code :lang<perl6>
+
+method prev()
+
+=end code
 
 Just like C<next> but in reverse. Returns a C<Net::Netmask> object of the previous block with the same mask.
 
-    my $net = Net::Netmask.new('192.168.0.1/24');
-    my $prev = $net.prev;
+=begin code :lang<perl6>
 
-    say "$prev comes before $net"; # 192.168.0.0/24 comes before 192.168.1.0/24
+my $net = Net::Netmask.new('192.168.0.1/24');
+my $prev = $net.prev;
+
+say "$prev comes before $net"; # 192.168.0.0/24 comes before 192.168.1.0/24
+
+=end code
 
 Alternatively, you can decrement your C<Net::Netmask> object to the previous block by using the auto-decrement operator
 
-    say "This block is $net"; # This block is 192.168.1.0/24
-    $net--;
-    say "Next block is $net"; # Previous block is 192.168.0.0/24
+=begin code :lang<perl6>
+
+say "This block is $net"; # This block is 192.168.1.0/24
+$net--;
+say "Next block is $net"; # Previous block is 192.168.0.0/24
+
+=end code
 
 
 =head1 BUGS, LIMITATIONS, and TODO
@@ -237,7 +313,6 @@ As yet I have not written tests... For shame.
     The Artistic License 2.0
 
 See LICENSE file in the repository for the full license text.
-
 
 =end pod
 
