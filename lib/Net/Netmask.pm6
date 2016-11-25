@@ -179,7 +179,7 @@ method enumerate(Int :$bit = 32, Bool :$nets)
 
 =end code
 
-Returns a lazy list of the IP addresses in that subnet. By default, it enumerates over all the 32-bit subnets (ie. single addresses) in the subnet, but by providing an optional named C<Int> argument C<:bit> , you can split the subnet into smaller blocks
+Returns a lazy list of the IP addresses in that subnet. By default, it enumerates over all the 32-bit subnets (ie. single addresses) in the subnet, but by providing an optional named C<Int> argument C<:$bit> , you can split the subnet into smaller blocks
 
 =begin code :lang<perl6>
 
@@ -190,7 +190,7 @@ say $net.enumerate(:30bit);
 
 =end code
 
-Additionally, you can also pass an optional named C<Bool> argument C<:nets>, which will return C<Net::Netmask> objects instead of C<Str>s.
+Additionally, you can also pass an optional named C<Bool> argument C<:$nets>, which will return C<Net::Netmask> objects instead of C<Str>s.
 
 =begin code :lang<perl6>
 
@@ -261,7 +261,7 @@ say $net.nth(3);
 say $net.nth(3, :30bit);
 # FAILURE: Index out of range. Is: 3, should be in 0..1;
 
-say $net.nth(^2, :30bit :nets).map( *.nth(^2) );
+say $net.nth(^2, :30bit :nets)».nth(^2);
 # OUTPUT: ((10.168.75.8 10.168.75.9) (10.168.75.12 10.168.75.13))
 
 =end code
