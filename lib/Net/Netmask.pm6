@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-Net::Netmask - Parse, manipulate and lookup IP network blocks
+Net::Netmask - Parse, manipulate and lookup IPv4 network blocks
 
 =head1 SYNOPSIS
 
@@ -75,7 +75,7 @@ If you create a C<Net::Netmask> object from one of the host addresses in the sub
 =begin code :info<perl6>
 
 my $net = Net::Netmask.new('192.168.75.10/29');
-say ~$net;    # 192.168.75.8/29
+say $net.desc;    # 192.168.75.8/29
 
 =end code
 
@@ -327,6 +327,8 @@ say "Next block is $net"; # Previous block is 192.168.0.0/24
 
 =head1 BUGS, LIMITATIONS, and TODO
 
+Yes, this module I<only> does IPv4. It's enough for me, but there's always room to grow. Pull requests welcome.
+
 As mentioned in the description, this module does not have method parity with the Perl 5 module of the same name. I didn't really look at how the other module is implemented, so there's a chance some of my methods might be horribly inefficient. Pull requests are welcome!
 
 As yet I have not written tests... For shame.
@@ -349,7 +351,7 @@ class Net::Netmask {
 
     our token cidr    { (\d+) <?{ $0 <=  32 }>  }
     our token octet   { (\d+) <?{ $0 <= 255 }>  }
-    our regex address { <octet> ** 4 % '.'     }
+    our regex address { <octet> ** 4 % '.'      }
     our subset IPv4 of Str where /<address>/;
     our subset CIDR of Str where /<address> '/' <cidr>/;
 

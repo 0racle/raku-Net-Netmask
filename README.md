@@ -1,7 +1,7 @@
 NAME
 ====
 
-Net::Netmask - Parse, manipulate and lookup IP network blocks
+Net::Netmask - Parse, manipulate and lookup IPv4 network blocks
 
 SYNOPSIS
 ========
@@ -70,7 +70,7 @@ If you create a `Net::Netmask` object from one of the host addresses in the subn
 
 ```perl6
 my $net = Net::Netmask.new('192.168.75.10/29');
-say ~$net;    # 192.168.75.8/29
+say $net.desc;    # 192.168.75.8/29
 ```
 
 IP Addresses are validated against the following subset
@@ -291,6 +291,8 @@ say "Next block is $net"; # Previous block is 192.168.0.0/24
 
 BUGS, LIMITATIONS, and TODO
 ===========================
+
+Yes, this module *only* does IPv4. It's enough for me, but there's always room to grow. Pull requests welcome.
 
 As mentioned in the description, this module does not have method parity with the Perl 5 module of the same name. I didn't really look at how the other module is implemented, so there's a chance some of my methods might be horribly inefficient. Pull requests are welcome!
 
