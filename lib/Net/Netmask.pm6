@@ -365,19 +365,17 @@ class Net::Netmask {
         self.bless(:$address :$netmask);
     }
 
+    multi method new(IPv4 $address) {
+        self.bless(:$address :netmask('255.255.255.255'));
+    }
+
     multi method new($network where *.words == 2) {
         self.new(|$network.words)
     }
 
-    multi method new(*@args) {
-        #my ($addr, $mask) = @args.flatmap( *.split(/ \s+ | '/' /) );
-        fail("Unable to parse network '{ @args }'")
-    }
-
     submethod BUILD(IPv4 :$address, IPv4 :$netmask) {
 
-        $!netmask = $netmask.split('.')[0] < 128
-          ?? $netmask.&bitflip !! $netmask;
+        $!netmask = $netmask;
 
         $!start = (
             [Z+&] ($address, $!netmask).map(*.split('.'))
