@@ -16,6 +16,7 @@ my @tests =
         mask    => '255.255.255.255',
         bits    => 32,
         size    => 1,
+        int     => 0,
         match   => ( '0.0.0.0' => 0 ),
         nomatch => [ '0.0.0.1', '10.0.0.0', '255.255.255.255' ],
     },
@@ -26,6 +27,7 @@ my @tests =
         mask    => '0.0.0.0',
         bits    => 0,
         size    => 2³²,
+        int     => 0,
         match   => [ '0.0.0.0' => 0, '0.0.0.1' => 1, '10.0.0.0' => 10*2²⁴, '255.255.255.255' => 2³²-1 ],
         nomatch => [ ],
     },
@@ -36,6 +38,7 @@ my @tests =
         mask    => '255.255.255.255',
         bits    => 32,
         size    => 1,
+        int     => 0xc0a84b08,
         match   => [ ],
         nomatch => [ '0.0.0.0', '0.0.0.1', '10.0.0.0', '255.255.255.255' ],
     },
@@ -46,6 +49,7 @@ my @tests =
         mask    => '255.255.255.248',
         bits    => 29,
         size    => 8,
+        int     => 0xc0a84b08,
         match   => [ '192.168.75.8' => 0, '192.168.75.10' => 2, '192.168.75.15' => 7 ],
         nomatch => [ '0.0.0.0', '0.0.0.1', '10.0.0.0', '192.168.75.16', '255.255.255.255' ],
     },
@@ -56,6 +60,7 @@ my @tests =
         mask    => '255.255.255.255',
         bits    => 32,
         size    => 1,
+        int     => 0xffffffff,
         match   => [ '255.255.255.255' => 0 ],
         nomatch => [ '0.0.0.0', '0.0.0.1', '10.0.0.0', '192.168.75.16' ],
     };
@@ -72,6 +77,9 @@ for @tests -> $test {
 
     is $net.bits, $test<bits>, "bits of $test<input>";
     is $net.size, $test<size>, "size of $test<input>";
+
+    is $net.Numeric, $test<int>, "Numeric of $test<input>";
+    is $net.Int,     $test<int>, "Int of $test<input>";
 
     my $net2 = Net::Netmask.new( $test<base>, $test<mask> );
     is ~$net2, ~$net, "Construction $test<base> via 2 parameter new";
