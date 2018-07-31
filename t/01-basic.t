@@ -14,6 +14,8 @@ my @tests =
         desc    => '0.0.0.0/32',
         base    => '0.0.0.0',
         mask    => '255.255.255.255',
+        hmask   => '0.0.0.0',
+        bcast   => '0.0.0.0',
         bits    => 32,
         size    => 1,
         int     => 0,
@@ -25,6 +27,8 @@ my @tests =
         desc    => '0.0.0.0/0',
         base    => '0.0.0.0',
         mask    => '0.0.0.0',
+        hmask   => '255.255.255.255',
+        bcast   => '255.255.255.255',
         bits    => 0,
         size    => 2³²,
         int     => 0,
@@ -36,6 +40,8 @@ my @tests =
         desc    => '192.168.75.8/32',
         base    => '192.168.75.8',
         mask    => '255.255.255.255',
+        hmask   => '0.0.0.0',
+        bcast   => '192.168.75.8',
         bits    => 32,
         size    => 1,
         int     => 0xc0a84b08,
@@ -47,6 +53,8 @@ my @tests =
         desc    => '192.168.75.8/29',
         base    => '192.168.75.8',
         mask    => '255.255.255.248',
+        hmask   => '0.0.0.7',
+        bcast   => '192.168.75.15',
         bits    => 29,
         size    => 8,
         int     => 0xc0a84b08,
@@ -58,6 +66,8 @@ my @tests =
         desc    => '255.255.255.255/32',
         base    => '255.255.255.255',
         mask    => '255.255.255.255',
+        hmask   => '0.0.0.0',
+        bcast   => '255.255.255.255',
         bits    => 32,
         size    => 1,
         int     => 0xffffffff,
@@ -72,8 +82,13 @@ for @tests -> $test {
     is $net.Str, $test<desc>, "Stringification (2) of $test<input>";
     is $net.desc, $test<desc>, "desc of $test<input>";
     
+    is $net.first, $test<base>, "first of $test<input>";
     is $net.base, $test<base>, "base of $test<input>";
     is $net.mask, $test<mask>, "mask of $test<input>";
+
+    is $net.hostmask, $test<hmask>, "hostmask of $test<input>";
+    is $net.broadcast, $test<bcast>, "broadcast of $test<input>";
+    is $net.last, $test<bcast>, "last of $test<input>";
 
     is $net.bits, $test<bits>, "bits of $test<input>";
     is $net.size, $test<size>, "size of $test<input>";
