@@ -8,7 +8,7 @@ use Test;
 
 use Net::Netmask;
 
-my @tests = (
+my @tests =
     {
         input   => '0.0.0.0',
         desc    => '0.0.0.0/32',
@@ -58,8 +58,7 @@ my @tests = (
         size    => 1,
         match   => [ '255.255.255.255' => 0 ],
         nomatch => [ '0.0.0.0', '0.0.0.1', '10.0.0.0', '192.168.75.16' ],
-    },
-);
+    };
 
 for @tests -> $test {
     my $net = Net::Netmask.new( $test<input> );
@@ -87,6 +86,46 @@ for @tests -> $test {
     for @($test<match>) -> $match {
         is $net.match($match.key), $match.value, "Match test of $test<desc> for $match.key";
     }
+}
+
+my $obj = Net::Netmask.new('0.0.0.0/0');
+is $obj.enumerate[1024], '0.0.4.0', '0.0.0.0/0 enumerate[1024] = 0.0.4.0';
+
+@tests =
+    {
+        input    => '0.0.0.0/32',
+        output24 => «0.0.0.0»,
+        output28 => «0.0.0.0»,
+        output32 => «0.0.0.0»,
+    },
+    {
+        input    => '1.0.0.0/32',
+        output24 => «1.0.0.0»,
+        output28 => «1.0.0.0»,
+        output32 => «1.0.0.0»,
+    },
+    {
+        input    => '10.20.9.0/24',
+        output24 => «10.20.9.0»,
+        output28 => ( 0,16,32...240 ).map( { "10.20.9.$^a" } ),
+        output32 => (^256).map( { "10.20.9.$^a" } ),
+    }
+;
+
+for @tests -> $test {
+    my $net = Net::Netmask.new( $test<input> );
+
+    is $net.enumerate, $test<output32>, "$test<input> /32 Enumerations";
+    is $net.enumerate :28bit, $test<output28>, "$test<input> /28 Enumerations";
+    is $net.enumerate :24bit, $test<output24>, "$test<input> /24 Enumerations";
+
+    $test<net_output32> = $test<output32>.map( { "$^a/32" } );
+    $test<net_output28> = $test<output28>.map( { "$^a/28" } );
+    $test<net_output24> = $test<output24>.map( { "$^a/24" } );
+
+    is $net.enumerate :nets,         $test<net_output32>, "$test<input> /32 Net Enumerations";
+    is $net.enumerate(:28bit :nets), $test<net_output28>, "$test<input> /28 Net Enumerations";
+    is $net.enumerate(:24bit :nets), $test<net_output24>, "$test<input> /24 Net Enumerations";
 }
 
 done-testing;
