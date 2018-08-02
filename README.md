@@ -179,6 +179,8 @@ say $net.enumerate(:30bit);
 Additionally, you can also pass an optional named `Bool` argument `:$nets`, which will return `Net::Netmask` objects instead of `Str`s.
 
 ```perl-6
+my $net = Net::Netmask.new('192.168.75.8/29');
+
 say $net.enumerate(:30bit :nets).map( *.desc );
 # OUTPUT: (192.168.75.8/30 192.168.75.12/30)
 ```
@@ -231,14 +233,16 @@ say $net.nth(@n);
 The named arguments `:$bit` and `:$nets` work just like `enumerate`. Note that when using `:$bit`, the `$n`th index is based on how many subnets your are producing.
 
 ```perl-6
-say $net.nth(3);
+my $net2 = Net::Netmask.new('192.168.75.8/29');
+
+say $net2.nth(3);
 # OUTPUT: (192.168.75.11)
 
-say $net.nth(3, :30bit);
+say $net2.nth(3, :30bit);
 # FAILURE: Index out of range. Is: 3, should be in 0..1;
 
-say $net.nth(^2, :30bit :nets)».nth(^2);
-# OUTPUT: ((10.168.75.8 10.168.75.9) (10.168.75.12 10.168.75.13))
+say $net2.nth(^2, :30bit :nets)».nth(^2);
+# OUTPUT: ((192.168.75.8 192.168.75.9) (192.168.75.12 192.168.75.13))
 ```
 
 next
