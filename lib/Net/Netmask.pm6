@@ -58,10 +58,10 @@ Currently, the following forms are recognized
 Net::Netmask.new('192.168.75.8/29');
 
 # Address and netmask (1 positional arg)
-Net::Netmask.new('192.168.75.8 255.255.255.248')
+Net::Netmask.new('192.168.75.8 255.255.255.248');
 
 # Address and netmask (2 positional args)
-Net::Netmask.new('192.168.75.8', '255.255.255.248')
+Net::Netmask.new('192.168.75.8', '255.255.255.248');
 
 # Named arguments
 Net::Netmask.new( :address('192.168.75.8') :netmask('255.255.255.248') );
@@ -311,7 +311,7 @@ Just like C<next> but in reverse. Returns a C<Net::Netmask> object of the previo
 
 =begin code :lang<perl-6>
 
-my $net = Net::Netmask.new('192.168.0.1/24');
+my $net = Net::Netmask.new('192.168.1.0/24');
 my $prev = $net.prev;
 
 say "$prev comes before $net"; # 192.168.0.0/24 comes before 192.168.1.0/24
