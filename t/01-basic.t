@@ -152,7 +152,7 @@ for @tests -> $test {
         $p--;
         is $p, $test<prev>, "-- of $test<input>";
     } else {
-        todo "-- currently wraps around", 2;
+        todo "-- currently wraps around";
         dies-ok { $p-- }, "-- of $test<input>";
     }
 }
