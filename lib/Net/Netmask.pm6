@@ -335,8 +335,6 @@ Yes, this module I<only> does IPv4. It's enough for me, but there's always room 
 
 As mentioned in the description, this module does not have method parity with the Perl 5 module of the same name. I didn't really look at how the other module is implemented, so there's a chance some of my methods might be horribly inefficient. Pull requests are welcome!
 
-As yet I have not written tests... For shame.
-
 
 =head1 LICENCE
 
