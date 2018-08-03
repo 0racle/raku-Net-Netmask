@@ -110,7 +110,6 @@ for @tests -> $test {
         is $net.next, $test<next>, "next of $test<input>";
         is $net.succ, $test<next>, "succ of $test<input>";
     } else {
-        todo "next currently wraps around", 2;
         dies-ok { $net.next }, "next of $test<input>";
         dies-ok { $net.succ }, "succ of $test<input>";
     }
@@ -119,7 +118,6 @@ for @tests -> $test {
         is $net.prev, $test<prev>, "prev of $test<input>";
         is $net.pred, $test<prev>, "pred of $test<input>";
     } else {
-        todo "next currently wraps around", 2;
         dies-ok { $net.prev }, "prev of $test<input>";
         dies-ok { $net.pred }, "pred of $test<input>";
     }
@@ -143,7 +141,6 @@ for @tests -> $test {
         $n++;
         is $n, $test<next>, "++ of $test<input>";
     } else {
-        todo "++ currently wraps around";
         dies-ok { $n++ }, "++ of $test<input>";
     }
 
@@ -152,7 +149,6 @@ for @tests -> $test {
         $p--;
         is $p, $test<prev>, "-- of $test<input>";
     } else {
-        todo "-- currently wraps around";
         dies-ok { $p-- }, "-- of $test<input>";
     }
 }

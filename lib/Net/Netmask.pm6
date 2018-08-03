@@ -466,7 +466,7 @@ class Net::Netmask {
         }).sum;
     }
 
-    sub dec2ip(\d) {
+    sub dec2ip(\d where 0 <= * < 2**32 --> IPv4) {
         ( (d +> 0x18, d +> 0x10, d +> 0x08, d) »%» 0x100 ).join('.');
     }
 
