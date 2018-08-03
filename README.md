@@ -293,6 +293,63 @@ $net--;
 say "Next block is $net"; # Previous block is 192.168.0.0/24
 ```
 
+sortkey()
+---------
+
+```perl-6
+my @nets = Net::Netmask.new('192.168.1.0/24'),
+    Net::Netmask.new('192.168.0.0/16'),
+    Net::Netmask.new('192.168.0.0/24');
+
+say @nets.sort(*.sortkey)[0];  # 192.168.0.0/16
+say @nets.sort(*.sk)[0];       # 192.168.0.0/16
+```
+
+Provides a numeric value (Rat) that can be used as a sort key. Note that this value should not be directly used, as it is subject to future changes. This routine will return smaller values for smaller CIDR network addresses. I.E. the value for `10.0.0.0` will always be smaller than the value for `192.168.0.0`. Where the network address is the same, a CIDR with a shorter prefix will appear before one with a longer CIDR prefix. Thus, the `sortkey()` for `192.168.0.0/16` will be smaller than the `sortkey()` for `192.168.0.0/24`.
+
+Synonym: `sk`
+
+CLASS METHODS
+=============
+
+sort()
+------
+
+```perl-6
+my @nets = Net::Netmask.new('192.168.1.0/24'),
+    Net::Netmask.new('192.168.0.0/16'),
+    Net::Netmask.new('192.168.0.0/24');
+
+say Net::Netmask.sort(@nets)[0]  # 192.168.0.0/16
+```
+
+This sort method will use the internal `sortkey()` method to provide a sorted sequence of `Net::Netmask` objects. Note that you must call this only on the class (I.E. `Net::Netmask.sort(...)`) and never on an individual instance (I.E. `$net.sort(...)`. If called on an instance rather than the class, an exception will be thrown.
+
+TYPE CONVERSIONS
+================
+
+Int()
+-----
+
+```perl-6
+my $net = Net::Netmask.new('192.168.1.0/24');
+say $net.Int;   # 3232235776
+```
+
+Returns an Int representing the integer value of the IP address (similar to `inet_atoi`).
+
+Synonym: `Real`
+
+Str()
+-----
+
+```perl-6
+my $net = Net::Netmask.new('192.168.1.0/24');
+say $net.Str;  # 192.168.1.0/24
+```
+
+Returns the stringification of the object.
+
 BUGS, LIMITATIONS, and TODO
 ===========================
 

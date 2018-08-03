@@ -328,6 +328,76 @@ say "Next block is $net"; # Previous block is 192.168.0.0/24
 
 =end code
 
+=head2 sortkey()
+
+=begin code :lang<perl-6>
+
+my @nets = Net::Netmask.new('192.168.1.0/24'),
+    Net::Netmask.new('192.168.0.0/16'),
+    Net::Netmask.new('192.168.0.0/24');
+
+say @nets.sort(*.sortkey)[0];  # 192.168.0.0/16
+say @nets.sort(*.sk)[0];       # 192.168.0.0/16
+
+=end code
+
+Provides a numeric value (Rat) that can be used as a sort key.  Note that this
+value should not be directly used, as it is subject to future changes.  This
+routine will return smaller values for smaller CIDR network addresses.  I.E.
+the value for C<10.0.0.0> will always be smaller than the value
+for C<192.168.0.0>.  Where the network address is the same, a CIDR with a
+shorter prefix will appear before one with a longer CIDR prefix.  Thus,
+the C<sortkey()> for C<192.168.0.0/16> will be smaller than the C<sortkey()>
+for C<192.168.0.0/24>.
+
+Synonym: C<sk>
+
+=head1 CLASS METHODS
+
+=head2 sort()
+
+=begin code :lang<perl-6>
+
+my @nets = Net::Netmask.new('192.168.1.0/24'),
+    Net::Netmask.new('192.168.0.0/16'),
+    Net::Netmask.new('192.168.0.0/24');
+
+say Net::Netmask.sort(@nets)[0]  # 192.168.0.0/16
+
+=end code
+
+This sort method will use the internal C<sortkey()> method to provide a
+sorted sequence of C<Net::Netmask> objects.  Note that you must call
+this only on the class (I.E. C<Net::Netmask.sort(...)>) and never on
+an individual instance (I.E. C<$net.sort(...)>.  If called on an instance
+rather than the class, an exception will be thrown.
+
+=head1 TYPE CONVERSIONS
+
+=head2 Int()
+
+=begin code :lang<perl-6>
+
+my $net = Net::Netmask.new('192.168.1.0/24');
+say $net.Int;   # 3232235776
+
+=end code
+
+Returns an Int representing the integer value of the IP address (similar
+to C<inet_atoi>).
+
+Synonym: C<Real>
+
+=head2 Str()
+
+=begin code :lang<perl-6>
+
+my $net = Net::Netmask.new('192.168.1.0/24');
+say $net.Str;  # 192.168.1.0/24
+
+=end code
+
+Returns the stringification of the object.
 
 =head1 BUGS, LIMITATIONS, and TODO
 
@@ -409,6 +479,7 @@ class Net::Netmask {
 
     method Numeric { $!start; }
     method Int     { $!start; }
+    method Real    { $!start; }
 
     method desc    { self.Str;  }
     method mask    { $.netmask; }
@@ -485,5 +556,15 @@ class Net::Netmask {
         $.prev
     }
 
+    method sort(*@a) {
+        if defined self { die "Cannot call sort() as an instance method"; }
+        @a.sort( *.sortkey );
+    }
+
+    method sortkey {
+        return $!start +  $.bits/32;
+    }
+
+    method sk { $.sortkey; }
 }
 

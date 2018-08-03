@@ -148,5 +148,23 @@ subtest "Prev" => {
     is $net, "192.168.0.0/24", "--";
 }
 
+subtest "Int / Str" => {
+    my $net = Net::Netmask.new('192.168.1.0/24');
+    is $net.Int, 3232235776, "Int";
+    is $net.Real, 3232235776, "Real";
+    is $net.Str, '192.168.1.0/24', "Str";
+}
+
+subtest "sort" => {
+    my @nets = Net::Netmask.new('192.168.1.0/24'),
+        Net::Netmask.new('192.168.0.0/16'),
+        Net::Netmask.new('192.168.0.0/24');
+
+    is @nets.sort(*.sortkey)[0], '192.168.0.0/16', "sortkey";
+    is @nets.sort(*.sk)[0], '192.168.0.0/16', "sk";
+
+    is Net::Netmask.sort(@nets)[0], '192.168.0.0/16', "sort";
+}
+
 done-testing;
 
