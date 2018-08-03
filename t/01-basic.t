@@ -151,7 +151,14 @@ for @tests -> $test {
     } else {
         dies-ok { $p-- }, "-- of $test<input>";
     }
+
+    is ip2dec($test<base>), $test<int>,  "ip2dec conversion";
+    is dec2ip($test<int>),  $test<base>, "dec2ip conversion";
 }
+
+#IPv4 range 0 to 4294967295
+throws-like { dec2ip(-1) },    Exception, message => 'not in IPv4 range 0-4294967295';
+throws-like { dec2ip(2**32) }, Exception, message => 'not in IPv4 range 0-4294967295';
 
 my $obj = Net::Netmask.new('0.0.0.0/0');
 is $obj.enumerate[1024], '0.0.4.0', '0.0.0.0/0 enumerate[1024] = 0.0.4.0';

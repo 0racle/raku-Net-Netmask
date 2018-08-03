@@ -350,6 +350,27 @@ say $net.Str;  # 192.168.1.0/24
 
 Returns the stringification of the object.
 
+FUNCTIONS
+==========
+
+dec2ip
+-----
+
+```perl-6
+dec2ip(2130706433); #127.0.0.1
+```
+
+Converts decimal number to IPv4 address string.
+
+ip2dec
+-----
+```perl-6
+ip2dec('127.0.0.1'); #2130706433
+```
+
+Converts string IPv4 address to decimal number.
+
+
 BUGS, LIMITATIONS, and TODO
 ===========================
 
