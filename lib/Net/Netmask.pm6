@@ -460,13 +460,13 @@ class Net::Netmask {
         ).join('.').&ip2dec;
     }
 
-    sub ip2dec(\i) {
+    sub ip2dec(\i) is export {
         i.split('.').flatmap({
             ($^a +< 0x18), ($^b +< 0x10), ($^c +< 0x08), $^d
         }).sum;
     }
 
-    sub dec2ip(\d) {
+    sub dec2ip(\d where { 0 <= $_ < 2**32 or die 'not in IPv4 range 0-4294967295'} --> IPv4) is export {
         ( (d +> 0x18, d +> 0x10, d +> 0x08, d) »%» 0x100 ).join('.');
     }
 
