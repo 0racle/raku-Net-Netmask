@@ -416,6 +416,43 @@ See LICENSE file in the repository for the full license text.
 
 class Net::Netmask {
 
+#from http://rosettacode.org/wiki/Parse_an_IP_Address#Perl_6
+#    grammar IP_Addr {
+#        token TOP { ^ [ <IPv4> | <IPv6> ] $ }
+#
+#        token IPv4 {
+#            [ <d8> +% '.' ] <?{ $<d8> == 4 }> <port>?
+#            { @*by8 = @$<d8> }
+#        }
+#
+#        token IPv6 {
+#            |     <ipv6>
+#            | '[' <ipv6> ']' <port>
+#        }
+#
+#        token ipv6 {
+#            | <h16> +% ':' <?{ $<h16> == 8 }>
+#            { @*by16 = @$<h16> }
+#
+#            | [ (<h16>) +% ':']? '::' (<h16>) +% ':' <?{ @$0 + @$1 <= 8 }>
+#            { @*by16 = @$0, '0' xx 8 - (@$0 + @$1), @$1 }
+#
+#            | '::ffff:' <IPv4>
+#            { @*by16 = '0' xx 5, 'ffff', by8to16 @*by8 }
+#        }
+#
+#        token d8  { (\d+) <?{ $0 < 256   }> }
+#        token d16 { (\d+) <?{ $0 < 65536 }> }
+#        token h16 { (<:hexdigit>+) <?{ @$0 <= 4 }> }
+#
+#        token port {
+#            ':' <d16> { $*port = +$<d16> }
+#        }
+#    }
+
+
+
+
     has Str $.address;
     has Str $.netmask;
     has Int $!start;
