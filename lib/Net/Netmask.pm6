@@ -428,7 +428,7 @@ class Net::Netmask {
         }
 
         token ipv4mask {
-            \s [ <d8> +% '.' ] <?{ $<d8> == 4 }>
+            \s [ <d8> +% '.' ] <?{ $<d8> == 4 and ((@$<d8>)».fmt("%08b").join ~~ /^1*0*$/)}>
             { make @$<d8>.join('.') }
         }
 
