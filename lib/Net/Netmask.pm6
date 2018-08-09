@@ -420,9 +420,16 @@ class Net::Netmask {
     grammar IP_Addr {
         token TOP { ^ [ <IPv4> | <IPv6> ] $ }
 
-        token IPv4 {
-            [ <d8> +% '.' ] <?{ $<d8> == 4 }> <CIDRv4>?
-            { make @$<d8> }
+        token IPv4 { <ipv4> [ <CIDRv4> | <ipv4mask> ]? }
+
+        token ipv4 {
+            [ <d8> +% '.' ] <?{ $<d8> == 4 }>
+            { make @$<d8>.join('.') }
+        }
+
+        token ipv4mask {
+            \s [ <d8> +% '.' ] <?{ $<d8> == 4 }>
+            { make @$<d8>.join('.') }
         }
 
         token IPv6 {
@@ -468,21 +475,14 @@ class Net::Netmask {
 
     multi method new($ip){
         my $match = IP_Addr.parse($ip) or die 'failed to parse ' ~ $ip.gist;
-        my @address = $match<IPv4>.made;
-        my $address = :16(@address».fmt("%02x").join).base(10).&dec2ip;
-        my $netmask = $match<IPv4><CIDRv4>.made // '255.255.255.255';
+        my $address = $match<IPv4><ipv4>.made;
+        my $netmask = $match<IPv4><CIDRv4>.made // $match<IPv4><ipv4mask>.made // '255.255.255.255';
         self.bless :$address :$netmask;
     }
 
     multi method new($address, $netmask) {
         self.bless(:$address :$netmask);
     }
-
-    multi method new($network where *.words == 2) {
-        self.new(|$network.words)
-    }
-
-
 
     submethod BUILD(IPv4 :$address, IPv4 :$netmask) {
 
