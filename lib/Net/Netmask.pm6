@@ -416,13 +416,13 @@ See LICENSE file in the repository for the full license text.
 
 class Net::Netmask {
 
-#from http://rosettacode.org/wiki/Parse_an_IP_Address#Perl_6
+#base on http://rosettacode.org/wiki/Parse_an_IP_Address#Perl_6
     grammar IP_Addr {
         token TOP { ^ [ <IPv4> | <IPv6> ] $ }
 
         token IPv4 {
             [ <d8> +% '.' ] <?{ $<d8> == 4 }> <CIDRv4>?
-            { @*by8 = @$<d8> }
+            { make @$<d8> }
         }
 
         token IPv6 {
@@ -432,26 +432,26 @@ class Net::Netmask {
 
         token ipv6 {
             | <h16> +% ':' <?{ $<h16> == 8 }>
-            { @*by16 = @$<h16> }
+            { make @$<h16> }
 
             | [ (<h16>) +% ':']? '::' (<h16>) +% ':' <?{ @$0 + @$1 <= 8 }>
-            { @*by16 = @$0, '0' xx 8 - (@$0 + @$1), @$1 }
+            { make @$0, '0' xx 8 - (@$0 + @$1), @$1 }
 
             | '::ffff:' <IPv4>
-            { @*by16 = '0' xx 5, 'ffff', by8to16 @*by8 }
+            { make '0' xx 5, 'ffff', by8to16 @*by8 }
         }
 
         token d8  { (\d+) <?{ $0 < 256   }> }
-        token n5  { (\d+) <?{ $0 < 33    }> }
-        token n7  { (\d+) <?{ $0 < 129   }> }
+        token n5  { (\d+) <?{ $0 <= 32    }> }
+        token n7  { (\d+) <?{ $0 <= 128   }> }
         token h16 { (<:hexdigit>+) <?{ @$0 <= 4 }> }
 
         token CIDRv4 {
-            '/' <n5> { $*netmask = +$<n5> }
+            '/' <n5> { make ((2 ** $<n5> - 1) +< (32 - $<n5> )).&dec2ip }
         }
 
         token CIDRv6 {
-            '/' <n7> { $*netmask = +$<n7> }
+            '/' <n7> #{ TODO make .....  +$<n7> }
         }
     }
 
@@ -461,36 +461,22 @@ class Net::Netmask {
     has Int $!start;
     has Int $!end;
 
-    our token cidr    { (\d+) <?{ $0 <=  32 }>  }
     our token octet   { (\d+) <?{ $0 <= 255 }>  }
     our regex address { <octet> ** 4 % '.'      }
     our subset IPv4 of Str where / ^ <address> $ /;
-    #our subset CIDR of Str where / ^ <address> '/' <cidr> $ /;
+    #our subset IPv4 of Str where { IP_Addr.subparse: $_, :rule<IPv4> };
 
     multi method new($ip){
-        my @*by8;
-        my @*by16;
-        my $*netmask;
-        IP_Addr.parse($ip);
-        #warn $match<IPv4>;
-        my $netmask = (defined $*netmask) ?? ((2 ** $*netmask - 1) +< (32 - $*netmask)).&dec2ip !! '255.255.255.255';
-        my $address = :16(@*by8».fmt("%02x").join).base(10).&dec2ip;
+        my $match = IP_Addr.parse($ip) or die 'failed to parse ' ~ $ip.gist;
+        my @address = $match<IPv4>.made;
+        my $address = :16(@address».fmt("%02x").join).base(10).&dec2ip;
+        my $netmask = $match<IPv4><CIDRv4>.made // '255.255.255.255';
         self.bless :$address :$netmask;
     }
 
     multi method new($address, $netmask) {
         self.bless(:$address :$netmask);
     }
-#
-#    multi method new(CIDR $cidr) {
-#        my ($address, $bits) = $cidr.split('/');
-#        my $netmask = ((2 ** $bits - 1) +< (32 - $bits)).&dec2ip;
-#        self.bless(:$address :$netmask);
-#    }
-#
-#    multi method new(IPv4 $address) {
-#        self.bless(:$address, :netmask('255.255.255.255'));
-#    }
 
     multi method new($network where *.words == 2) {
         self.new(|$network.words)
