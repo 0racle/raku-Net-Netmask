@@ -468,10 +468,8 @@ class Net::Netmask {
         token h16 { (<:hexdigit>+) <?{ @$0 <= 4 }> }
     }
 
-
     our subset IPv4     of Str where { IP_Addr.subparse: $_, :rule<ipv4>     };
     our subset IPv4mask of Str where { IP_Addr.subparse: $_, :rule<ipv4mask> };
-
 
     multi method new(IPv4 $ip){
         my $match = IP_Addr.parse($ip)<IPv4> or die 'failed to parse ' ~ $ip.gist;
