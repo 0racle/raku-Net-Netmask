@@ -417,7 +417,7 @@ See LICENSE file in the repository for the full license text.
 class Net::Netmask {
 
     has Str $.address;
-    has Str $.netmask;
+    has Int @.netmask;
     has Int $!start;
     has Int $!end;
 
@@ -435,11 +435,11 @@ class Net::Netmask {
 
         token ipv4mask {
             \s* [ <d8> +% '.' ] <?{ $<d8> == 4 and ((@$<d8>)».fmt("%08b").join ~~ /^1*0*$/)}>
-            { make @$<d8>.join('.') }
+            { make @$<d8> }
         }
 
         token CIDRv4 {
-            '/' <n5> { make ((2 ** $<n5> - 1) +< (32 - $<n5> )).&dec2ip }
+            '/' <n5> { my $n = 2**32-1+<(32-$<n5>); make ($n +> 0x18, $n +>0x10, $n +>0x8, $n) »%» 0x100 }
         }
 
         token IPv6 {
@@ -475,25 +475,37 @@ class Net::Netmask {
 
     multi method new(IPv4 $ip){
         my $match = IP_Addr.parse($ip) or die 'failed to parse ' ~ $ip.gist;
-        self.bless :address($match<IPv4><ipv4>.made)
-                   :netmask(   $match<IPv4><CIDRv4>.made
-                            // $match<IPv4><ipv4mask>.made
-                            // '255.255.255.255' );
+        my @netmask = (255, 255, 255, 255);
+        if $match<IPv4><ipv4mask> { @netmask = $match<IPv4><ipv4mask>.made>>.Int }
+        if $match<IPv4><CIDRv4> {  @netmask = $match<IPv4><CIDRv4>.made>>.Int }
+        self.bless :address($match<IPv4><ipv4>.made) :@netmask;
     }
+
 
     multi method new(IPv4 $address, IPv4mask $netmask) {
-        self.bless(:$address :$netmask);
+        my @netmask;
+        IP_Addr.subparse($netmask, :rule<ipv4mask>).made>>.Int.map({@netmask.push: $_});
+        self.bless(:$address :@netmask);
     }
 
-    submethod BUILD(IPv4 :$address, IPv4mask :$netmask) {
+    multi method new(IPv4 :$address, IPv4mask :$netmask) {
+        my @netmask;
+        IP_Addr.subparse($netmask, :rule<ipv4mask>).made>>.Int.map({@netmask.push: $_});
+        self.bless(:$address :@netmask);
+    }
 
-        $!netmask = $netmask;
+    submethod BUILD(IPv4 :$address, :@netmask) {
+        @!netmask = @netmask;
 
         $!start = (
-            [Z+&] ($address, $!netmask).map(*.split('.'))
+            [Z+&] ($address, @!netmask.join('.')).map(*.split('.'))
         ).join('.').&ip2dec;
 
         $!address = $!start.&dec2ip;
+
+        #my $a= IP_Addr.subparse: $!start.&dec2ip, :rule<ipv4>;
+        #$a.made>>.Int.map({@!addrarr.push: $_});
+
 
         $!end = (
             [Z+^] ($!address, self.hostmask).map(*.split('.'))
@@ -524,10 +536,10 @@ class Net::Netmask {
     method Real    { $!start; }
 
     method desc    { self.Str;  }
-    method mask    { $.netmask; }
+    method mask    { @.netmask.join('.'); }
 
     method hostmask {
-        $!netmask.&bitflip;
+        @!netmask.join('.').&bitflip;
     }
 
     method broadcast {
@@ -547,7 +559,7 @@ class Net::Netmask {
     }
 
     method bits {
-        $!netmask.split('.').map(*.Int.base: 2).comb('1').elems;
+        @!netmask.join('.').split('.').map(*.Int.base: 2).comb('1').elems;
     }
 
     method size {
@@ -583,11 +595,11 @@ class Net::Netmask {
     }
 
     method next {
-        self.new(($!start + $.size).&dec2ip, $.netmask);
+        self.new(($!start + $.size).&dec2ip, @.netmask.join('.'));
     }
 
     method prev {
-        self.new(($!start - $.size).&dec2ip, $.netmask);
+        self.new(($!start - $.size).&dec2ip, @.netmask.join('.'));
     }
 
     method succ {
