@@ -66,8 +66,6 @@ my @invalid_input_two_param  =
         { :address<255.0.0.255>, :netmask<128.255.0.0>};
 
 for @invalid_input_two_param -> $test {
-    #thows-like seems to confueses test output
-    #throws-like {  my $net = Net::Netmask.new( $test<ip> ) }, Exception, message => 'failed to parse ' ~  $test<ip>, 'fail ' ~ $test<ip>  ;
     dies-ok  { Net::Netmask.new( $test<address>, $test<netmask> )}, 'dies two params ' ~ $test<address> ~ ' ' ~ $test<netmask>;
     dies-ok  { Net::Netmask.new( $test<address> ~ ' ' ~ $test<netmask> )}, 'dies one param ' ~ $test<address> ~ ' ' ~ $test<netmask>;
     dies-ok  { Net::Netmask.new( :address($test<address>), :netmask($test<netmask>) )}, 'dies named params ' ~ $test<address> ~ ' ' ~ $test<netmask>;
