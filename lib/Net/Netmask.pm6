@@ -495,9 +495,7 @@ class Net::Netmask {
 
         @!address = ip2arr($!start.&dec2ip);
 
-        $!end = (
-            [Z+^] (@!address.join('.'), self.hostmask).map(*.split('.'))
-        ).join('.').&ip2dec;
+        $!end = ( [Z+^] (@!address, self.hostmask.split('.'))).join('.').&ip2dec;
     }
 
     sub ip2dec(\i) is export {
@@ -510,9 +508,6 @@ class Net::Netmask {
         ( (d +> 0x18, d +> 0x10, d +> 0x08, d) »%» 0x100 ).join('.');
     }
 
-    sub bitflip(\a) {
-        ( a.split('.') »+^» 0xFF ).join('.');
-    }
 
     sub by8to16    (@m) { gather for @m -> $a,$b { take ($a * 256 + $b).fmt("%04x") } }
     sub ip2arr     ($a) { IP_Addr.subparse($a, :rule<ipv4>    ).made>>.Int            }
@@ -529,7 +524,7 @@ class Net::Netmask {
     method mask    { @.netmask.join('.'); }
 
     method hostmask {
-        @!netmask.join('.').&bitflip;
+        (@!netmask »+^» 0xFF).join('.');  #bitflip
     }
 
     method broadcast {
@@ -549,7 +544,7 @@ class Net::Netmask {
     }
 
     method bits {
-        @!netmask.map(*.Int.base: 2).comb('1').elems;
+        @!netmask.map(*.base: 2).comb('1').elems;
     }
 
     method size {
@@ -580,16 +575,16 @@ class Net::Netmask {
     }
 
     method match(IPv4 $ip) {
-        my $dec = $ip.Str.&ip2dec;
+        my $dec = self.new($ip).Int;
         $!end >= $dec >= $!start ?? ($dec - $!start) but True !! False;
     }
 
     method next {
-        self.new(($!start + $.size).&dec2ip, @.netmask.join('.'));
+        self.new(($!start + $.size).&dec2ip, self.mask);
     }
 
     method prev {
-        self.new(($!start - $.size).&dec2ip, @.netmask.join('.'));
+        self.new(($!start - $.size).&dec2ip, self.mask);
     }
 
     method succ {
