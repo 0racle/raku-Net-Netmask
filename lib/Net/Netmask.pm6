@@ -423,8 +423,8 @@ class Net::Netmask {
 
     #based on http://rosettacode.org/wiki/Parse_an_IP_Address#Perl_6
     grammar IP_Addr {
-    #token TOP { ^ [ <IPv4> | <IPv6> ] $ } #allow IPv6 Parsing needs more work to be done
-        token TOP { ^ <IPv4> $ }
+        token TOP { ^ [ <IPv4> | <IPv6> ] $ } #allow IPv6 Parsing needs more work to be done
+        #token TOP { ^ <IPv4> $ }
 
         token IPv4 { <ipv4> [ <CIDRv4> | <ipv4mask> ]? }
 
@@ -439,7 +439,7 @@ class Net::Netmask {
         }
 
         token CIDRv4 {
-            '/' <n5> { my $n = 2**32-1+<(32-$<n5>); make ($n +> 0x18, $n +>0x10, $n +>0x8, $n) »%» 0x100 }
+            '/' <n5> { my $n = 2**32-1+<(32-$<n5>); make (0x18,0x10...0x0).map({ $n +> $_}) »%» 0x100 }
         }
 
         token IPv6 {
@@ -452,14 +452,14 @@ class Net::Netmask {
             { make @$<h16> }
 
             | [ (<h16>) +% ':']? '::' (<h16>) +% ':' <?{ @$0 + @$1 <= 8 }>
-            { make @$0, '0' xx 8 - (@$0 + @$1), @$1 }
+            { my @ip = (@$0, '0' xx 8 - (@$0 + @$1), @$1); make (gather @ip.deepmap: *.take)}
 
             | '::ffff:' <IPv4>
-            { make '0' xx 5, 'ffff', by8to16 @*by8 }
+            { make ('0' xx 5, 'ffff', by8to16 @*by8) }
         }
 
         token CIDRv6 {
-            '/' <n7> #{ TODO make .....  +$<n7> }
+            '/' <n7> { my $n = 2**128-1+<(128-$<n7>); make (0x70,0x60...0x0).map({ $n +> $_}) »%» 0x10000 }
         }
 
         token d8  { (\d+) <?{ $0 < 256   }> }
@@ -469,6 +469,7 @@ class Net::Netmask {
     }
 
     our subset IPv4     of Str where { IP_Addr.subparse: $_, :rule<ipv4>     };
+    our subset IPv6     of Str where { IP_Addr.subparse: $_, :rule<ipv6>     };
     our subset IPv4mask of Str where { IP_Addr.subparse: $_, :rule<ipv4mask> };
 
     multi method new(IPv4 $ip){
@@ -480,6 +481,16 @@ class Net::Netmask {
         self.bless :@address :@netmask;
     }
 
+    multi method new(IPv6 $ip){
+        my $match = IP_Addr.parse($ip)<IPv6> or die 'failed to parse ' ~ $ip.gist;
+        my @netmask = 0xFFFF xx 8;
+        #if $match<ipv6mask> { @netmask = $match<ipv6mask>.made>>.Int }
+        if $match<CIDRv6>   { @netmask = $match<CIDRv6>.made>>.Int   }
+        my @address = $match<ipv6>.made>>.Int;
+        self.bless :@address :@netmask;
+    }
+
+
     multi method new(IPv4 $address, IPv4mask $netmask) {
         self.bless :address(ip2arr($address)) :netmask(ipmask2arr($netmask));
     }
@@ -489,13 +500,24 @@ class Net::Netmask {
     }
 
     submethod BUILD(:@address, :@netmask) {
-        @!netmask = @netmask;
 
-        $!start = ( [Z+&] (@address, @!netmask)).join('.').&ip2dec;
+        given @address.elems {
+            when 4 {
+                @!netmask = @netmask;
+                $!start = ( [Z+&] (@address, @!netmask)).join('.').&ip2dec;
+                @!address = ip2arr($!start.&dec2ip);
+                $!end = ( [Z+^] (@!address, self.hostmask.split('.'))).join('.').&ip2dec;
+            }
 
-        @!address = ip2arr($!start.&dec2ip);
+            when 8 {
+                @!netmask = @netmask;
+                $!start = (( [Z+&] (@address, @!netmask)) Z+< (0x70,0x60...0)).sum;
+                @!address = (0x70,0x60...0x0).map({ $!start +> $_}) »%» 0x10000;
+                $!end = (( [Z+^] (@!address, self.hostmask.split(':'))) Z+< (0x70,0x60...0)).sum;
+            }
+            default { die 'failed to map to ip protocol ' ~ @address.perl}
+        }
 
-        $!end = ( [Z+^] (@!address, self.hostmask.split('.'))).join('.').&ip2dec;
     }
 
     sub ip2dec(\i) is export {
@@ -524,7 +546,13 @@ class Net::Netmask {
     method mask    { @.netmask.join('.'); }
 
     method hostmask {
-        (@!netmask »+^» 0xFF).join('.');  #bitflip
+        if @!address.elems == 4 {
+            return (@!netmask »+^» 0xFF).join('.');  #bitflit
+        }
+
+        if @!address.elems == 8 {
+            return (@!netmask »+^» 0xFFFF).join(':');  #bitflit
+        }
     }
 
     method broadcast {
