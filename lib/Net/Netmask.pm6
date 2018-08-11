@@ -472,6 +472,9 @@ class Net::Netmask {
     our subset IPv6     of Str where { IP_Addr.subparse: $_, :rule<ipv6>     };
     our subset IPv4mask of Str where { IP_Addr.subparse: $_, :rule<ipv4mask> };
 
+    our subset IPv4arr of Array where { .elems == 4 };
+    our subset IPv6arr of Array where { .elems == 8 };
+
     multi method new(IPv4 $ip){
         my $match = IP_Addr.parse($ip)<IPv4> or die 'failed to parse ' ~ $ip.gist;
         my @netmask = 255 xx 4;
@@ -501,15 +504,15 @@ class Net::Netmask {
 
     submethod BUILD(:@address, :@netmask) {
 
-        given @address.elems {
-            when 4 {
+        given @address {
+            when IPv4arr  {
                 @!netmask = @netmask;
                 $!start = ( [Z+&] (@address, @!netmask)).join('.').&ip2dec;
                 @!address = ip2arr($!start.&dec2ip);
                 $!end = ( [Z+^] (@!address, self.hostmask.split('.'))).join('.').&ip2dec;
             }
 
-            when 8 {
+            when IPv6arr {
                 @!netmask = @netmask;
                 $!start = (( [Z+&] (@address, @!netmask)) Z+< (0x70,0x60...0)).sum;
                 @!address = (0x70,0x60...0x0).map({ $!start +> $_}) »%» 0x10000;
@@ -546,11 +549,11 @@ class Net::Netmask {
     method mask    { @.netmask.join('.'); }
 
     method hostmask {
-        if @!address.elems == 4 {
+        if @!address ~~ IPv4arr {
             return (@!netmask »+^» 0xFF).join('.');  #bitflit
         }
 
-        if @!address.elems == 8 {
+        if @!address.elems ~~ IPv6arr {
             return (@!netmask »+^» 0xFFFF).join(':');  #bitflit
         }
     }
