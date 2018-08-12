@@ -443,16 +443,15 @@ class Net::Netmask {
         }
 
         token IPv6 {
-            |     <ipv6>
-            | '[' <ipv6> ']' <CIDRv6>
+                 <ipv6> [ <CIDRv6> ]?
         }
 
         token ipv6 {
             | <h16> +% ':' <?{ $<h16> == 8 }>
-            { make @$<h16> }
+            { make @$<h16>.map({.Str.parse-base(16)}) }
 
             | [ (<h16>) +% ':']? '::' (<h16>) +% ':' <?{ @$0 + @$1 <= 8 }>
-            { my @ip = (@$0, '0' xx 8 - (@$0 + @$1), @$1); make (gather @ip.deepmap: *.take)}
+            { make (|@$0, |( '0' xx 8 - (@$0 + @$1)), |@$1).map({.Str.parse-base(16)}) }
 
             | '::ffff:' <IPv4>
             { make ('0' xx 5, 'ffff', by8to16 @*by8) }
@@ -474,6 +473,7 @@ class Net::Netmask {
 
     our subset IPv4arr of Array where { .elems == 4 };
     our subset IPv6arr of Array where { .elems == 8 };
+    our subset IParr   of Array where { $_ ~~ IPv4arr || $_ ~~ IPv6arr };
 
     multi method new(IPv4 $ip){
         my $match = IP_Addr.parse($ip)<IPv4> or die 'failed to parse ' ~ $ip.gist;
@@ -487,7 +487,6 @@ class Net::Netmask {
     multi method new(IPv6 $ip){
         my $match = IP_Addr.parse($ip)<IPv6> or die 'failed to parse ' ~ $ip.gist;
         my @netmask = 0xFFFF xx 8;
-        #if $match<ipv6mask> { @netmask = $match<ipv6mask>.made>>.Int }
         if $match<CIDRv6>   { @netmask = $match<CIDRv6>.made>>.Int   }
         my @address = $match<ipv6>.made>>.Int;
         self.bless :@address :@netmask;
@@ -502,8 +501,7 @@ class Net::Netmask {
         self.bless :address(ip2arr($address)) :netmask(ipmask2arr($netmask));
     }
 
-    submethod BUILD(:@address, :@netmask) {
-
+    submethod BUILD(:@address where {$_ ~~ IParr}, :@netmask where {$_ ~~ IParr}) {
         given @address {
             when IPv4arr  {
                 @!netmask = @netmask;
@@ -518,7 +516,6 @@ class Net::Netmask {
                 @!address = (0x70,0x60...0x0).map({ $!start +> $_}) »%» 0x10000;
                 $!end = (( [Z+^] (@!address, self.hostmask.split(':'))) Z+< (0x70,0x60...0)).sum;
             }
-            default { die 'failed to map to ip protocol ' ~ @address.perl}
         }
 
     }
@@ -553,7 +550,7 @@ class Net::Netmask {
             return (@!netmask »+^» 0xFF).join('.');  #bitflit
         }
 
-        if @!address.elems ~~ IPv6arr {
+        if @!address ~~ IPv6arr {
             return (@!netmask »+^» 0xFFFF).join(':');  #bitflit
         }
     }
@@ -567,7 +564,10 @@ class Net::Netmask {
     }
 
     method base {
-        @!address.join('.');
+        given @!address {
+            when IPv4arr { @!address.join('.') }
+            when IPv6arr { @!address.map({$_.base(16)}).join(':') }
+        }
     }
 
     method first {
