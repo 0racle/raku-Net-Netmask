@@ -531,7 +531,7 @@ class Net::Netmask {
     }
 
     sub dec2ip6(\d where { 0 <= $_ <= (2**128-1) or die 'not in IPv6 range (128bit)'} --> IPv6) is export {
-        (((0x70,0x60...0x0).map({ d +> $_}) »%» 0x10000).map(*.base(16)).join(':'));
+        (((0x70,0x60...0x0).map({ d +> $_}) »%» 0x10000)».base(16).join(':'));
     }
 
     sub by8to16    (@m) { gather for @m -> $a,$b { take ($a * 256 + $b).fmt("%04x") } }
@@ -542,7 +542,7 @@ class Net::Netmask {
     method Str     {
         given @!address {
             when IPv4arr { "$.base/$.bits"; }
-            when IPv6arr { $.base ~ "/$.bits";}
+            when IPv6arr { "$.compress6/$.bits";}
         }
     }
 

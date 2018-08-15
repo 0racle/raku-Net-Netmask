@@ -39,7 +39,7 @@ for @valid_input_ip -> $test {
 }
 
 my $testnet = Net::Netmask.new('fd9e:21a7:a92c:2323:0:0:0:1/37');
-is dec2ip6(337115748440208604321572676367667953665).lc, 'fd9e:21a7:a92c:2323::1', 'dec2ip6';
+is dec2ip6(337115748440208604321572676367667953665).lc, 'fd9e:21a7:a92c:2323:0:0:0:1', 'dec2ip6';
 is $testnet.desc.lc, 'fd9e:21a7:a800::/37', 'desc';
 is $testnet.size, 2475880078570760549798248448, 'size';
 is $testnet.bits, 37, 'bits';
