@@ -8,12 +8,29 @@ use lib 'lib';
 
 use Net::Netmask;
 
+my @valid_input_ip6 =
+        {:ip<0000:0000:0000:0000:0000:0000:0000:0001>, :desc<::1>},
+        {:ip<::1>,                                     :desc<::1>},
+        {:ip<fd9e:21a7:a92c:2323::1/128>,              :desc<fd9e:21a7:a92c:2323::1>},
+        {:ip<fd9e:21a7:a92c:2323:0:0:0:0/128>,         :desc<fd9e:21a7:a92c:2323::>},
+        {:ip<fd9e:21a7:a92c:2323:0:0:0:1/128>,         :desc<fd9e:21a7:a92c:2323::1>},
+        {:ip<fd9e:21a7:a92c:2323:0:0:0:1>,             :desc<fd9e:21a7:a92c:2323::1>},
+        {:ip<fd9e:21a7:a92c:2323::/128>,               :desc<fd9e:21a7:a92c:2323::>};
+
+
+
+for @valid_input_ip6 -> $test {
+    my $net = Net::Netmask.new( $test<ip> );
+    is $net.compress6.lc, $test<desc>, $test<ip> ~ ' >compress> ' ~ $test<desc> ;
+}
+
+
 my @valid_input_ip =
-        {:ip<0000:0000:0000:0000:0000:0000:0000:0001>, :desc<0:0:0:0:0:0:0:1/128>},
-        {:ip<::1>,                                     :desc<0:0:0:0:0:0:0:1/128>},
-        {:ip<fd9e:21a7:a92c:2323::1/128>,              :desc<fd9e:21a7:a92c:2323:0:0:0:1/128>},
-        {:ip<fd9e:21a7:a92c:2323:0:0:0:1/128>,            :desc<fd9e:21a7:a92c:2323:0:0:0:1/128>},
-        {:ip<fd9e:21a7:a92c:2323:0:0:0:1>,                :desc<fd9e:21a7:a92c:2323:0:0:0:1/128>};
+        {:ip<0000:0000:0000:0000:0000:0000:0000:0001>, :desc<::1/128>},
+        {:ip<::1>,                                     :desc<::1/128>},
+        {:ip<fd9e:21a7:a92c:2323::1/128>,              :desc<fd9e:21a7:a92c:2323::1/128>},
+        {:ip<fd9e:21a7:a92c:2323:0:0:0:1/128>,         :desc<fd9e:21a7:a92c:2323::1/128>},
+        {:ip<fd9e:21a7:a92c:2323:0:0:0:1>,             :desc<fd9e:21a7:a92c:2323::1/128>};
 
 for @valid_input_ip -> $test {
     my $net = Net::Netmask.new( $test<ip> );
@@ -22,21 +39,22 @@ for @valid_input_ip -> $test {
 }
 
 my $testnet = Net::Netmask.new('fd9e:21a7:a92c:2323:0:0:0:1/37');
-is $testnet.desc.lc, 'fd9e:21a7:a800:0:0:0:0:0/37';
-#is $testnet.size, 137438953472;
-#is $testnet.broadcast.lc, 'fd9e:21a7:afff:ffff:ffff:ffff:ffff:ffff';
+is dec2ip6(337115748440208604321572676367667953665).lc, 'fd9e:21a7:a92c:2323::1', 'dec2ip6';
+is $testnet.desc.lc, 'fd9e:21a7:a800::/37', 'desc';
+is $testnet.size, 2475880078570760549798248448, 'size';
+is $testnet.bits, 37, 'bits';
+is $testnet.broadcast.lc, 'fd9e:21a7:afff:ffff:ffff:ffff:ffff:ffff', 'broadcast';
+is $testnet.next, 'fd9e:21a7:b000::', 'next';
+is $testnet.mask, 'ffff:ffff:f800::', 'mask';
 
 
 
-        #desc    => '192.168.75.8/32',
+
         #base    => '192.168.75.8',#my @invalid_input_ip =
-        #mask    => '255.255.255.255',#        :ip<0.0.0.>,
         #hmask   => '0.0.0.0',#        :ip<0.0.0.256>;
-        #bcast   => '192.168.75.8',#
-        #next    => '192.168.75.9/32',#for @invalid_input_ip -> $test {
         #prev    => '192.168.75.7/32',#    dies-ok { Net::Netmask.new( $test<ip> ) }, 'dies ' ~ $test<ip>;
-        #bits    => 32,#}
-        #size    => 1,#
+        
+        
         #int     => 0xc0a84b08,#
         #match   => [ ],#my @valid_input_ip_cidr =
         #nomatch => [ '0.0.0.0', '0.0.0.1', '10.0.0.0', '255.255.255.255' ],#        :ip<0.0.0.0/0>,

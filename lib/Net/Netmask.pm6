@@ -450,7 +450,7 @@ class Net::Netmask {
             | <h16> +% ':' <?{ $<h16> == 8 }>
             { make @$<h16>.map({.Str.parse-base(16)}) }
 
-            | [ (<h16>) +% ':']? '::' (<h16>) +% ':' <?{ @$0 + @$1 <= 8 }>
+            | [ (<h16>) +% ':']? '::' [ (<h16>) +% ':' ]? <?{ @$0 + @$1 <= 8 }>
             { make (|@$0, |( '0' xx 8 - (@$0 + @$1)), |@$1).map({.Str.parse-base(16)}) }
 
             | '::ffff:' <IPv4>
@@ -530,12 +530,22 @@ class Net::Netmask {
         ( (d +> 0x18, d +> 0x10, d +> 0x08, d) »%» 0x100 ).join('.');
     }
 
+    sub dec2ip6(\d where { 0 <= $_ <= (2**128-1) or die 'not in IPv6 range (128bit)'} --> IPv6) is export {
+        (((0x70,0x60...0x0).map({ d +> $_}) »%» 0x10000).map(*.base(16)).join(':'));
+    }
 
     sub by8to16    (@m) { gather for @m -> $a,$b { take ($a * 256 + $b).fmt("%04x") } }
     sub ip2arr     ($a) { IP_Addr.subparse($a, :rule<ipv4>    ).made>>.Int            }
     sub ipmask2arr ($m) { IP_Addr.subparse($m, :rule<ipv4mask>).made>>.Int            }
 
-    method Str     { "$.base/$.bits";      }
+
+    method Str     {
+        given @!address {
+            when IPv4arr { "$.base/$.bits"; }
+            when IPv6arr { $.base ~ "/$.bits";}
+        }
+    }
+
     method gist    { qq[Net::Netmask.new("$.Str")]; }
 
     method Numeric { $!start; }
@@ -555,8 +565,44 @@ class Net::Netmask {
         }
     }
 
+    method compress6 {
+        my $matches = 0;
+        my $bestspos = Nil;
+        my $startpos = Nil;
+        for @!address.keys -> $i {
+            if @!address[$i] == 0 ff^ @!address[$i] != 0 {
+                $startpos //= $i;
+                #last element is zero and bestmatch
+                if $i == @!address.elems-1 and @!address.elems-$startpos > $matches {
+                    $matches  = @!address.elems-$startpos;
+                    $bestspos = $startpos;
+                }
+            } else {
+                if defined $startpos and $i-$startpos > $matches {
+                    $matches = $i-$startpos;
+                    $bestspos = $startpos;
+                }
+                $startpos = Nil;
+            }
+        }
+
+        given $bestspos {
+            when 0                             { '::' ~ @!address.[$matches .. (@!address.elems-1)]».base(16).join(':') }
+            when + $matches == @!address.elems { @!address.[0..$bestspos-1]».base(16).join(':') ~ '::'}
+            when $_                            { @!address.[0..$bestspos-1]».base(16).join(':') ~ '::' ~ @!address.[($bestspos+$matches)..(@!address.elems-1)]».base(16).join(':') }
+            default                            { @!address».base(16).join(':') }
+        }
+    }
+
+
     method broadcast {
-        $!end.&dec2ip;
+        if @!address ~~ IPv4arr {
+            return $!end.&dec2ip;
+        }
+
+        if @!address ~~ IPv6arr {
+            return $!end.&dec2ip6;
+        }
     }
 
     method last {
