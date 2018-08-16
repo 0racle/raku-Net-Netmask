@@ -453,8 +453,8 @@ class Net::Netmask {
             | [ (<h16>) +% ':']? '::' [ (<h16>) +% ':' ]? <?{ @$0 + @$1 <= 8 }>
             { make (|@$0, |( '0' xx 8 - (@$0 + @$1)), |@$1).map({.Str.parse-base(16)}) }
 
-            | '::ffff:' <IPv4>
-            { make ('0' xx 5, 'ffff', by8to16 @*by8) }
+            | :i['::ffff:' | '0:0:0:0:0:ffff:'] <IPv4>
+            { make (|(0 xx 5), 0xff , 0xff, by8to16 @$<IPv4>) }
         }
 
         token CIDRv6 {
@@ -464,7 +464,7 @@ class Net::Netmask {
         token d8  { (\d+) <?{ $0 < 256   }> }
         token n5  { (\d+) <?{ $0 <= 32    }> }
         token n7  { (\d+) <?{ $0 <= 128   }> }
-        token h16 { (<:hexdigit>+) <?{ @$0 <= 4 }> }
+        token h16 { (<:hexdigit> ** {1..4})  }
     }
 
     our subset IPv4     of Str where { IP_Addr.subparse: $_, :rule<ipv4>     };
@@ -492,7 +492,6 @@ class Net::Netmask {
         self.bless :@address :@netmask;
     }
 
-
     multi method new(IPv4 $address, IPv4mask $netmask) {
         self.bless :address(ip2arr($address)) :netmask(ipmask2arr($netmask));
     }
@@ -514,7 +513,7 @@ class Net::Netmask {
                 @!netmask = @netmask;
                 $!start = (( [Z+&] (@address, @!netmask)) Z+< (0x70,0x60...0)).sum;
                 @!address = (0x70,0x60...0x0).map({ $!start +> $_}) »%» 0x10000;
-                $!end = (( [Z+^] (@!address, self.hostmask.split(':'))) Z+< (0x70,0x60...0)).sum;
+                $!end = (( [Z+^] (@!address, self.hostmask.split(':').map({:16($_)}))) Z+< (0x70,0x60...0)).sum;
             }
         }
 
@@ -534,10 +533,9 @@ class Net::Netmask {
         (((0x70,0x60...0x0).map({ d +> $_}) »%» 0x10000)».base(16).join(':'));
     }
 
-    sub by8to16    (@m) { gather for @m -> $a,$b { take ($a * 256 + $b).fmt("%04x") } }
-    sub ip2arr     ($a) { IP_Addr.subparse($a, :rule<ipv4>    ).made>>.Int            }
-    sub ipmask2arr ($m) { IP_Addr.subparse($m, :rule<ipv4mask>).made>>.Int            }
-
+    sub by8to16     (@m) { gather for @m -> $a,$b { take ($a * 256 + $b).fmt("%04x") } }
+    sub ip2arr      ($a) { IP_Addr.subparse($a, :rule<ipv4>    ).made>>.Int            }
+    sub ipmask2arr  ($m) { IP_Addr.subparse($m, :rule<ipv4mask>).made>>.Int            }
 
     method Str     {
         given @!address {
@@ -553,15 +551,17 @@ class Net::Netmask {
     method Real    { $!start; }
 
     method desc    { self.Str;  }
-    method mask    { @.netmask.join('.'); }
+    method mask    {
+        given @!address {
+            when IPv4arr { @.netmask.join('.') }
+            when IPv6arr { @!netmask».base(16).join(':') }
+        }
+    }
 
     method hostmask {
-        if @!address ~~ IPv4arr {
-            return (@!netmask »+^» 0xFF).join('.');  #bitflit
-        }
-
-        if @!address ~~ IPv6arr {
-            return (@!netmask »+^» 0xFFFF).join(':');  #bitflit
+        given @!address {
+            when IPv4arr { (@!netmask »+^» 0xFF).join('.')  } #bitflip
+            when IPv6arr { (@!netmask »+^» 0xFFFF)».base(16).join(':')}
         }
     }
 
@@ -596,14 +596,11 @@ class Net::Netmask {
 
 
     method broadcast {
-        if @!address ~~ IPv4arr {
-            return $!end.&dec2ip;
+        given @!address {
+            when IPv4arr { $!end.&dec2ip }
+            when IPv6arr { $!end.&dec2ip6}
         }
-
-        if @!address ~~ IPv6arr {
-            return $!end.&dec2ip6;
-        }
-    }
+     }
 
     method last {
         $.broadcast;
@@ -612,7 +609,7 @@ class Net::Netmask {
     method base {
         given @!address {
             when IPv4arr { @!address.join('.') }
-            when IPv6arr { @!address.map({$_.base(16)}).join(':') }
+            when IPv6arr { $.compress6 }
         }
     }
 
@@ -657,11 +654,18 @@ class Net::Netmask {
     }
 
     method next {
-        self.new(($!start + $.size).&dec2ip, self.mask);
+        given @!address {
+            when IPv4arr { self.new(($!start + $.size).&dec2ip, self.mask) }
+            when IPv6arr { self.new(($!start + $.size).&dec2ip6 ~ '/' ~ self.bits) }
+        }
     }
 
     method prev {
-        self.new(($!start - $.size).&dec2ip, self.mask);
+        given @!address {
+            when IPv4arr { self.new(($!start - $.size).&dec2ip, self.mask) }
+            when IPv6arr { self.new(($!start - $.size).&dec2ip6  ~ '/' ~ self.bits) }
+        }
+
     }
 
     method succ {
