@@ -9,17 +9,17 @@ use lib 'lib';
 use Net::Netmask;
 
 my @valid_input_ip6 =
-        {:ip<0000:0000:0000:0000:0000:0000:0000:0001>, :desc<::1>},
-        {:ip<::1>,                                     :desc<::1>},
-        {:ip<fd9e:21a7:a92c:2323::1/128>,              :desc<fd9e:21a7:a92c:2323::1>},
-        {:ip<fd9e:21a7:a92c:2323:0:0:0:0/128>,         :desc<fd9e:21a7:a92c:2323::>},
-        {:ip<fd9e:21a7:a92c:2323:0:0:0:1/128>,         :desc<fd9e:21a7:a92c:2323::1>},
-        {:ip<fd9e:21a7:a92c:2323:0:0:0:1>,             :desc<fd9e:21a7:a92c:2323::1>},
-        {:ip<fd9e:21a7:a92c:2323::/128>,               :desc<fd9e:21a7:a92c:2323::>};
+        {:ip<0000:0000:0000:0000:0000:0000:0000:0001>, :desc<::1/128>},
+        {:ip<::1>,                                     :desc<::1/128>},
+        {:ip<fd9e:21a7:a92c:2323::1/128>,              :desc<fd9e:21a7:a92c:2323::1/128>},
+        {:ip<fd9e:21a7:a92c:2323:0:0:0:0/128>,         :desc<fd9e:21a7:a92c:2323::/128>},
+        {:ip<fd9e:21a7:a92c:2323:0:0:0:1/128>,         :desc<fd9e:21a7:a92c:2323::1/128>},
+        {:ip<fd9e:21a7:a92c:2323:0:0:0:1>,             :desc<fd9e:21a7:a92c:2323::1/128>},
+        {:ip<fd9e:21a7:a92c:2323::/128>,               :desc<fd9e:21a7:a92c:2323::/128>};
 
 for @valid_input_ip6 -> $test {
     my $net = Net::Netmask.new( $test<ip> );
-    is $net.compress6.lc, $test<desc>, $test<ip> ~ ' >compress> ' ~ $test<desc> ;
+    is $net.Str.lc, $test<desc>, $test<ip> ~ ' >compress> ' ~ $test<desc> ;
 }
 
 
