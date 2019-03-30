@@ -1,0 +1,7 @@
+Revision history for IP-Random
+
+{{$NEXT}}
+
+0.2.0  2019-03-30T14:13:00-06:00
+    - Add IPv6 support courtesy of Lukas Vale
+
