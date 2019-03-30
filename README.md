@@ -39,7 +39,9 @@ for $net.enumerate(:30bit :nets) -> $addr {
 DESCRIPTION
 ===========
 
-`Net::Netmask` parses and understands IPv4 CIDR blocks. The interface is inspired by the Perl 5 module of the same name.
+`Net::Netmask` parses and understands IPv4 and IPv6 CIDR blocks. The interface is inspired by the Perl 5 module of the same name.
+
+Not all methods support IPv6 yet. The IPv6 interface is subject to change and should be considered experimental.
 
 This module does not have full method parity with it's Perl 5 cousin. Pull requests are welcome.
 
@@ -73,7 +75,7 @@ my $net = Net::Netmask.new('192.168.75.10/29');
 say $net.desc;    # 192.168.75.8/29
 ```
 
-IP Addresses are validated against the following subset
+IPv4 Addresses are validated against the following subset
 
 ```perl-6
 token octet   { (\d+) <?{ $0 <= 255 }>  }
@@ -351,30 +353,35 @@ say $net.Str;  # 192.168.1.0/24
 Returns the stringification of the object.
 
 FUNCTIONS
-==========
+=========
 
-dec2ip
------
+dec2ip()
+--------
 
-```perl-6
-dec2ip(2130706433); #127.0.0.1
-```
+    dec2ip(2130706433); #127.0.0.1
 
 Converts decimal number to IPv4 address string.
 
-ip2dec
------
-```perl-6
-ip2dec('127.0.0.1'); #2130706433
-```
+ip2dec()
+--------
+
+    ip2dec('127.0.0.1'); #2130706433
 
 Converts string IPv4 address to decimal number.
 
+CONTRIBUTORS
+============
+
+The author is Joshua Yeshouroun
+
+Some updates have been made by Joelle Maslak <jmaslak@antelope.net>
+
+Initial IPv6 code contributed by Lukas Vale.
 
 BUGS, LIMITATIONS, and TODO
 ===========================
 
-Yes, this module *only* does IPv4. It's enough for me, but there's always room to grow. Pull requests welcome.
+Yes, this module is fully functional for IPv4 but not-so-complete for IPv6. It's enough for me, but there's always room to grow. Pull requests welcome.
 
 As mentioned in the description, this module does not have method parity with the Perl 5 module of the same name. I didn't really look at how the other module is implemented, so there's a chance some of my methods might be horribly inefficient. Pull requests are welcome!
 
