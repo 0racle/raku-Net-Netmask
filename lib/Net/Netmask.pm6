@@ -416,48 +416,108 @@ See LICENSE file in the repository for the full license text.
 
 class Net::Netmask {
 
-    has Str $.address;
-    has Str $.netmask;
+    has Int @.address;
+    has Int @.netmask;
     has Int $!start;
     has Int $!end;
 
-    our token cidr    { (\d+) <?{ $0 <=  32 }>  }
-    our token octet   { (\d+) <?{ $0 <= 255 }>  }
-    our regex address { <octet> ** 4 % '.'      }
-    our subset IPv4 of Str where / ^ <address> $ /;
-    our subset CIDR of Str where / ^ <address> '/' <cidr> $ /;
+    #based on http://rosettacode.org/wiki/Parse_an_IP_Address#Perl_6
+    grammar IP_Addr {
+        token TOP { ^ [ <IPv4> | <IPv6> ] $ } #allow IPv6 Parsing needs more work to be done
+        #token TOP { ^ <IPv4> $ }
 
-    multi method new($address, $netmask) {
-        self.bless(:$address :$netmask);
+        token IPv4 { <ipv4> [ <CIDRv4> | <ipv4mask> ]? }
+
+        token ipv4 {
+            [ <d8> +% '.' ] <?{ $<d8> == 4 }>
+            { make @$<d8> }
+        }
+
+        token ipv4mask {
+            \s* [ <d8> +% '.' ] <?{ $<d8> == 4 and ((@$<d8>)».fmt("%08b").join ~~ /^1*0*$/)}>
+            { make @$<d8> }
+        }
+
+        token CIDRv4 {
+            '/' <n5> { my $n = 2**32-1+<(32-$<n5>); make (0x18,0x10...0x0).map({ $n +> $_}) »%» 0x100 }
+        }
+
+        token IPv6 {
+                 <ipv6> [ <CIDRv6> ]?
+        }
+
+        token ipv6 {
+            | <h16> +% ':' <?{ $<h16> == 8 }>
+            { make @$<h16>.map({.Str.parse-base(16)}) }
+
+            | [ (<h16>) +% ':']? '::' [ (<h16>) +% ':' ]? <?{ @$0 + @$1 <= 8 }>
+            { make (|@$0, |( '0' xx 8 - (@$0 + @$1)), |@$1).map({.Str.parse-base(16)}) }
+
+            | :i['::ffff:' | '0:0:0:0:0:ffff:'] <IPv4>
+            { make (|(0 xx 5), 0xff , 0xff, by8to16 @$<IPv4>) }
+        }
+
+        token CIDRv6 {
+            '/' <n7> { my $n = 2**128-1+<(128-$<n7>); make (0x70,0x60...0x0).map({ $n +> $_}) »%» 0x10000 }
+        }
+
+        token d8  { (\d+) <?{ $0 < 256   }> }
+        token n5  { (\d+) <?{ $0 <= 32    }> }
+        token n7  { (\d+) <?{ $0 <= 128   }> }
+        token h16 { (<:hexdigit> ** {1..4})  }
     }
 
-    multi method new(CIDR $cidr) {
-        my ($address, $bits) = $cidr.split('/');
-        my $netmask = ((2 ** $bits - 1) +< (32 - $bits)).&dec2ip;
-        self.bless(:$address :$netmask);
+
+    our subset IPv4     of Str   where { IP_Addr.subparse: $_, :rule<ipv4>     };
+    our subset IPv4mask of Str   where { IP_Addr.subparse: $_, :rule<ipv4mask> };
+    our subset IPv4arr  of Array where { .elems == 4 };
+    our subset IPv6     of Str   where { IP_Addr.subparse: $_, :rule<ipv6>     };
+    our subset IPv6arr  of Array where { .elems == 8 };
+    our subset IParr    of Array where { $_ ~~ IPv4arr || $_ ~~ IPv6arr };
+
+
+    multi method new(IPv4 $ip){
+        my $match = IP_Addr.parse($ip)<IPv4> or die 'failed to parse ' ~ $ip.gist;
+        my @netmask = 255 xx 4;
+        if $match<ipv4mask> { @netmask = $match<ipv4mask>.made>>.Int }
+        if $match<CIDRv4>   { @netmask = $match<CIDRv4>.made>>.Int   }
+        my @address = $match<ipv4>.made>>.Int;
+        self.bless :@address :@netmask;
     }
 
-    multi method new(IPv4 $address) {
-        self.bless(:$address :netmask('255.255.255.255'));
+    multi method new(IPv6 $ip){
+        my $match = IP_Addr.parse($ip)<IPv6> or die 'failed to parse ' ~ $ip.gist;
+        my @netmask = 0xFFFF xx 8;
+        if $match<CIDRv6>   { @netmask = $match<CIDRv6>.made>>.Int   }
+        my @address = $match<ipv6>.made>>.Int;
+        self.bless :@address :@netmask;
     }
 
-    multi method new($network where *.words == 2) {
-        self.new(|$network.words)
+    multi method new(IPv4 $address, IPv4mask $netmask) {
+        self.bless :address(ip2arr($address)) :netmask(ipmask2arr($netmask));
     }
 
-    submethod BUILD(IPv4 :$address, IPv4 :$netmask) {
+    multi method new(IPv4 :$address, IPv4mask :$netmask) {
+        self.bless :address(ip2arr($address)) :netmask(ipmask2arr($netmask));
+    }
 
-        $!netmask = $netmask;
+    submethod BUILD(:@address where {$_ ~~ IParr}, :@netmask where {$_ ~~ IParr}) {
+        given @address {
+            when IPv4arr  {
+                @!netmask = @netmask;
+                $!start = ( [Z+&] (@address, @!netmask)).join('.').&ip2dec;
+                @!address = ip2arr($!start.&dec2ip);
+                $!end = ( [Z+^] (@!address, self.hostmask.split('.'))).join('.').&ip2dec;
+            }
 
-        $!start = (
-            [Z+&] ($address, $!netmask).map(*.split('.'))
-        ).join('.').&ip2dec;
+            when IPv6arr {
+                @!netmask = @netmask;
+                $!start = (( [Z+&] (@address, @!netmask)) Z+< (0x70,0x60...0)).sum;
+                @!address = (0x70,0x60...0x0).map({ $!start +> $_}) »%» 0x10000;
+                $!end = (( [Z+^] (@!address, (@!netmask »+^» 0xFFFF) )) Z+< (0x70,0x60...0)).sum;
+            }
+        }
 
-        $!address = $!start.&dec2ip;
-
-        $!end = (
-            [Z+^] ($!address, self.hostmask).map(*.split('.'))
-        ).join('.').&ip2dec;
     }
 
     sub ip2dec(\i) is export {
@@ -466,38 +526,93 @@ class Net::Netmask {
         }).sum;
     }
 
-    sub dec2ip(\d where { 0 <= $_ < 2**32 or die 'not in IPv4 range 0-4294967295'} --> IPv4) is export {
+    sub dec2ip(\d where { 0 <= $_ <= 0xffffffff or die 'not in IPv4 range 0-4294967295'} --> IPv4) is export {
         ( (d +> 0x18, d +> 0x10, d +> 0x08, d) »%» 0x100 ).join('.');
     }
 
-    sub bitflip(\a) {
-        ( a.split('.') »+^» 0xFF ).join('.');
+    sub dec2ip6(\d where { 0 <= $_ <= (2**128-1) or die 'not in IPv6 range (128bit)'} --> IPv6) is export {
+        (((0x70,0x60...0x0).map({ d +> $_}) »%» 0x10000)».base(16).join(':'));
     }
 
-    method Str     { "$.base/$.bits";      }
-    method gist    { qq[Net::Netmask.new("$.Str")]; }
+    sub by8to16     (@m) { gather for @m -> $a,$b { take ($a * 256 + $b).fmt("%04x") } }
+    sub ip2arr      ($a) { IP_Addr.subparse($a, :rule<ipv4>    ).made>>.Int            }
+    sub ipmask2arr  ($m) { IP_Addr.subparse($m, :rule<ipv4mask>).made>>.Int            }
 
+    sub compress6(@ip) {
+        my $matches = 0;
+        my $bestspos = Nil;
+        my $startpos = Nil;
+        for @ip.keys -> $i {
+            if @ip[$i] == 0 ff^ @ip[$i] != 0 {
+                $startpos //= $i;
+                #last element is zero and bestmatch
+                if $i == @ip.elems-1 and @ip.elems-$startpos > $matches {
+                    $matches  = @ip.elems-$startpos;
+                    $bestspos = $startpos;
+                }
+            } else {
+                if defined $startpos and $i-$startpos > $matches {
+                    $matches = $i-$startpos;
+                    $bestspos = $startpos;
+                }
+                $startpos = Nil;
+            }
+        }
+
+        given $bestspos {
+            when 0                       { '::' ~ @ip.[$matches .. (@ip.elems-1)]».base(16).join(':') }
+            when + $matches == @ip.elems { @ip.[0..$bestspos-1]».base(16).join(':') ~ '::'}
+            when $_                      { @ip.[0..$bestspos-1]».base(16).join(':') ~ '::' ~ @ip.[($bestspos+$matches)..(@ip.elems-1)]».base(16).join(':') }
+            default                      { @ip».base(16).join(':') }
+        }
+    }
+
+
+    method Str     {
+        given @!address {
+            when IPv4arr { "$.base/$.bits"; }
+            when IPv6arr { "$.base/$.bits";}
+        }
+    }
+
+    method gist    { qq[Net::Netmask.new("$.Str")]; }
     method Numeric { $!start; }
     method Int     { $!start; }
     method Real    { $!start; }
-
     method desc    { self.Str;  }
-    method mask    { $.netmask; }
+
+    method mask    {
+        given @!address {
+            when IPv4arr { @.netmask.join('.') }
+            when IPv6arr { @!netmask.&compress6 }
+        }
+    }
 
     method hostmask {
-        $!netmask.&bitflip;
+        given @!address {
+            when IPv4arr { (@!netmask »+^» 0xFF).join('.')  } #bitflip
+            when IPv6arr { (@!netmask »+^» 0xFFFF).&compress6}
+            #when IPv6arr { (@!netmask »+^» 0xFFFF)».base(16).join(':')}
+
+        }
     }
 
     method broadcast {
-        $!end.&dec2ip;
-    }
+        given @!address {
+            when IPv4arr { $!end.&dec2ip }
+            when IPv6arr { $!end.&dec2ip6}
+        }
+     }
 
     method last {
         $.broadcast;
     }
 
     method base {
-        $!address;
+        given @!address {
+            when IPv4arr { @!address.join('.') }
+            when IPv6arr { @!address.&compress6 }
+        }
     }
 
     method first {
@@ -505,47 +620,89 @@ class Net::Netmask {
     }
 
     method bits {
-        $!netmask.split('.').map(*.Int.base: 2).comb('1').elems;
+        @!netmask.map(*.base: 2).comb('1').elems;
     }
 
     method size {
         $!end - $!start + 1;
     }
 
-    method enumerate(Int :$bit = 32, Bool :$nets) {
-        $bit > 32 and fail('Cannot split network into smaller than /32 blocks');
-        my $inc = 2 ** ( 32 - $bit );
-        ($!start, * + $inc ... * > $!end - $inc).map(&dec2ip).map(-> $ip {
-            $nets ?? self.new( "$ip/$bit" ) !! $ip
-        });
-    }
-
-    method nth($n, Int :$bit = 32, Bool :$nets) {
-        $bit > 32 and fail('Cannot split network into smaller than /32 blocks');
-        my $inc = 2 ** ( 32 - $bit ) × 1;
-        my @n = $n.flatmap(* × $inc);
-        if ( my $i = @n.max ) >= $.size {
-            return fail(
-                "Index out of range. Is: { $i ÷ $inc }, "
-              ~ "should be in 0..{ ($.size ÷ $inc) - 1 }"
-            );
+    method enumerate(Int :$bit, Bool :$nets) {
+        given @!address {
+            when IPv4arr {
+                my $b = $bit // 32;
+                $b > 32 and fail('Cannot split network into smaller than /32 blocks');
+                my $inc = 2 ** ( 32 - $b );
+                ($!start, * + $inc ... * > $!end - $inc).map(&dec2ip).map(-> $ip {
+                     $nets ?? self.new( "$ip/$b" ) !! $ip
+                });
+            }
+            when IPv6arr {
+                my $b = $bit // 128;
+                $b > 128 and fail('Cannot split network into smaller than /128 blocks');
+                my $inc = 2 ** ( 128 - $b );
+                ($!start, * + $inc ... * > $!end - $inc).map(&dec2ip6).map(-> $ip {
+                    $nets ?? self.new( "$ip/$b" ) !! self.new($ip).base
+                });
+            }
         }
-        ($!start .. $!end)[@n].map(&dec2ip).map(-> $ip {
-            $nets ?? self.new( "$ip/$bit" ) !! $ip
-        });
     }
 
-    method match($ip where /<address>/) {
-        my $dec = $ip.Str.&ip2dec;
+    method nth($n, Int :$bit, Bool :$nets) {
+        given @!address {
+            when IPv4arr {
+                my $b = $bit // 32;
+                $b > 32 and fail('Cannot split network into smaller than /32 blocks');
+                my $inc = 2 ** ( 32 - $b ) × 1;
+                my @n = $n.flatmap(* × $inc);
+                if ( my $i = @n.max ) >= $.size {
+                    return fail(
+                        "Index out of range. Is: { $i ÷ $inc }, "
+                        ~ "should be in 0..{ ($.size ÷ $inc) - 1 }"
+                    );
+                }
+                ($!start .. $!end)[@n].map(&dec2ip).map(-> $ip {
+                     $nets ?? self.new( "$ip/$b" ) !! $ip
+                });
+            }
+            when IPv6arr {
+                my $b = $bit // 128;
+                $b > 128 and fail('Cannot split network into smaller than /128 blocks');
+                my $inc = 2 ** ( 128 - $b ) × 1;
+                my @n = $n.flatmap(* × $inc);
+                if ( my $i = @n.max ) >= $.size {
+                    return fail(
+                            "Index out of range. Is: { $i ÷ $inc }, "
+                            ~ "should be in 0..{ ($.size ÷ $inc) - 1 }"
+                            );
+                }
+                ($!start .. $!end)[@n].map(&dec2ip6).map(-> $ip {
+                    $nets ?? self.new( "$ip/$b" ) !! self.new($ip).base
+                });
+            }
+        }
+
+
+
+    }
+
+    method match(IPv4 $ip) {
+        my $dec = self.new($ip).Int;
         $!end >= $dec >= $!start ?? ($dec - $!start) but True !! False;
     }
 
     method next {
-        self.new(($!start + $.size).&dec2ip, $.netmask);
+        given @!address {
+            when IPv4arr { self.new(($!start + $.size).&dec2ip, self.mask) }
+            when IPv6arr { self.new(($!start + $.size).&dec2ip6 ~ '/' ~ self.bits) }
+        }
     }
 
     method prev {
-        self.new(($!start - $.size).&dec2ip, $.netmask);
+        given @!address {
+            when IPv4arr { self.new(($!start - $.size).&dec2ip, self.mask) }
+            when IPv6arr { self.new(($!start - $.size).&dec2ip6  ~ '/' ~ self.bits) }
+        }
     }
 
     method succ {
@@ -562,7 +719,10 @@ class Net::Netmask {
     }
 
     method sortkey {
-        return $!start +  $.bits/32;
+        given @!address {
+            when IPv4arr { $!start +  $.bits/32 }
+            when IPv6arr { $!start +  $.bits/128}
+        }
     }
 
     method sk { $.sortkey; }
