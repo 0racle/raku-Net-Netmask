@@ -88,7 +88,7 @@ IPv4 Addresses are validated against the following subset
 
 =begin code :lang<perl-6>
 
-token octet   { (\d+) <?{ $0 <= 255 }>  }
+token octet   { (0||<[1..9]><[0..9]>*) <?{ $0 <= 255 }>  }
 regex address { <octet> ** 4 % '.'      }
 subset IPv4 of Str where /<address>/;
 
@@ -490,7 +490,7 @@ class Net::Netmask {
             '/' <n7> { my $n = 2**128-1+<(128-$<n7>); make (0x70,0x60...0x0).map({ $n +> $_}) »%» 0x10000 }
         }
 
-        token d8  { (\d+) <?{ $0 < 256   }> }
+        token d8  { (0||<[1..9]><[0..9]>*) <?{ $0 < 256 }>  }
         token n5  { (\d+) <?{ $0 <= 32    }> }
         token n7  { (\d+) <?{ $0 <= 128   }> }
         token h16 { (<:hexdigit> ** {1..4})  }
