@@ -1,6 +1,7 @@
 Revision history for IP-Random
 
 {{$NEXT}}
+    - SECURITY: No longer allow IPv4 octets with leading zeros
 
 0.2.0  2019-03-30T14:13:00-06:00
     - Add IPv6 support courtesy of Lukas Vale
