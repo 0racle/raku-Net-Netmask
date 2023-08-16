@@ -1,19 +1,22 @@
 {
+  "auth": "zef:elcaro",
   "authors" : [
-    "Joshua Yeshouroun"
+    "github:0racle",
+    "github:jmaslak",
+    "github:lukasvalle"
   ],
   "build-depends" : [ ],
   "depends" : [ ],
   "description" : "Parse, manipulate and lookup IPv4 network blocks",
   "license" : "Artistic-2.0",
   "name" : "Net::Netmask",
-  "perl" : "6.c",
+  "raku" : "6.c",
   "provides" : {
-    "Net::Netmask" : "lib/Net/Netmask.pm6"
+    "Net::Netmask" : "lib/Net/Netmask.rakumod"
   },
   "resources" : [ ],
-  "source-url" : "git://github.com/0racle/p6-Net-Netmask.git",
+  "source-url" : "git://github.com/0racle/raku-Net-Netmask.git",
   "tags" : [ ],
   "test-depends" : [ ],
-  "version" : "0.2.0"
+  "version" : "0.2.1"
 }
